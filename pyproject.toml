@@ -1,0 +1,15 @@
+[project]
+name = "uk-ev-takeup-data-pipeline"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13.11"
+dependencies = [
+    "ipykernel>=7.2.0",
+    "marimo>=0.21.1",
+    "odfpy>=1.4.1",
+    "openpyxl>=3.1.5",
+    "pandas>=3.0.1",
+    "plotly>=6.6.0",
+    "pyzmq>=27.1.0",
+]
