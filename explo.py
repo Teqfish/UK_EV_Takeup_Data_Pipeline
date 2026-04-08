@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.4"
+__generated_with = "0.22.0"
 app = marimo.App()
 
 
@@ -11,7 +11,9 @@ def _():
     import plotly.express as px
     import openpyxl
 
-    return np, pd, px
+    from plotly.subplots import make_subplots
+
+    return make_subplots, np, pd, px
 
 
 @app.cell
@@ -22,14 +24,27 @@ def _(pd):
 
 
 @app.cell
+def _(df_0105):
+    df_0105.columns.to_list()
+    return
+
+
+@app.cell
+def _(df_0105):
+    df_0105["Fuel"].unique()
+    return
+
+
+@app.cell
 def _(df_0105, pd):
     # Melt back to long table
-    id_cols = ["Fuel", "BodyType", "Keepership"]
-    time_cols = [c for c in df_0105.columns if " Q" in str(c)]
+    mask_geo_0105 = (df_0105["ONS Geography"] == "United Kingdom") & (df_0105["Fuel"] != "Total") & (df_0105["BodyType"] >= "Total") & (df_0105["Keepership"] >= "Total")
+    id_cols_0105 = ["Fuel", "BodyType", "Keepership"]
+    time_cols_0105 = [c for c in df_0105.columns if " Q" in str(c)]
 
-    long_0105 = df_0105.melt(
-        id_vars=id_cols,
-        value_vars=time_cols,
+    long_0105 = df_0105[mask_geo_0105].melt(
+        id_vars=id_cols_0105,
+        value_vars=time_cols_0105,
         var_name="quarter",
         value_name="licensed_vehicles"
     )
@@ -44,13 +59,87 @@ def _(df_0105, pd):
         .groupby(["quarter","Fuel"], as_index=False)["licensed_vehicles"]
         .sum(numeric_only=True)
     )
+
+    sum_0105["licensed_vehicles_1000"] = sum_0105["licensed_vehicles"] * 1000
     return (sum_0105,)
 
 
 @app.cell
 def _(px, sum_0105):
     # Plot line chart
-    fig_0105 = px.line(sum_0105,x="quarter",y="licensed_vehicles",color="Fuel",title="Licensed Vehicles in the UK by fuel")
+    mask_0105 = (sum_0105["quarter"] >= "2015")
+
+    fig_0105 = px.line(
+        sum_0105[mask_0105],
+        x="quarter",
+        y="licensed_vehicles_1000",
+        color="Fuel",
+        title="Licensed Vehicles in the UK by fuel",
+        labels = {'licensed_vehicles_1000': 'number of vehicles'},
+        )
+    fig_0105.show()
+    return (fig_0105,)
+
+
+@app.cell
+def _(pd):
+    # import VEH0142
+    df_0142 = pd.read_excel("Datasets/raw_DVLA/veh0142.ods",sheet_name="VEH0142",header=4)
+    return (df_0142,)
+
+
+@app.cell
+def _(df_0142):
+    df_0142["Fuel"].unique().tolist()
+    return
+
+
+@app.cell
+def _(df_0142, pd):
+    # Melt back to long table
+    mask_geo_0142 = (df_0142["ONS Geography"] == "United Kingdom") & (df_0142["Fuel"] >= "Total") & (df_0142["BodyType"] >= "Total") & (df_0142["Keepership"] >= "Total")
+    id_cols_0142 = ["Fuel", "BodyType", "Keepership"]
+    time_cols_0142 = [c for c in df_0142.columns if " Q" in str(c)]
+
+    long_0142 = df_0142[mask_geo_0142].melt(
+        id_vars=id_cols_0142,
+        value_vars=time_cols_0142,
+        var_name="quarter",
+        value_name="licensed_vehicles"
+    )
+
+    long_0142["licensed_vehicles"] = pd.to_numeric(
+        long_0142["licensed_vehicles"], errors="coerce"
+    )
+
+    # Group by quarter and sum
+    sum_0142 = (
+        long_0142
+        .groupby(["quarter","Fuel"], as_index=False)["licensed_vehicles"]
+        .sum(numeric_only=True)
+    )
+    return (sum_0142,)
+
+
+@app.cell
+def _(px, sum_0142):
+    mask_0142 = (
+        sum_0142["quarter"] >= "2015")
+
+    # Plot line chart
+    fig_0142 = px.line(
+        sum_0142[mask_0142],
+        x="quarter",
+        y="licensed_vehicles",
+        color="Fuel",
+        title="Licensed PIVs in the UK by fuel"
+        )
+    fig_0142.show()
+    return
+
+
+@app.cell
+def _(fig_0105):
     fig_0105.show()
     return
 
@@ -298,7 +387,7 @@ def _(px, sum_0181):
 @app.cell
 def _(pd):
     # import VEH1103 - all licensed vehicles by fuel type
-    df_1103a = pd.read_excel("Datasets/raw_DVLA/veh1103.ods",sheet_name="VEH1103b_All",header=4)
+    df_1103a = pd.read_excel("Datasets/raw_DVLA/veh1103.ods",sheet_name="VEH1103a_RoadUsing",header=4)
     return (df_1103a,)
 
 
@@ -334,13 +423,19 @@ def _(df_1103a, pd):
         df_1103["quarter"].astype("string").str.zfill(2)
     )
 
-    df_1103.quarter_date.max()
-    return (df_1103,)
+    # filter for UK, all vehicles, 2015+
+    mask_1103 = (df_1103["year"] >= 2015) & (df_1103["BodyType"] == "Total") & (df_1103["Geography"] == "United Kingdom")
+    filtered_1103 = df_1103[mask_1103]
+
+    # Create Fossil total
+    filtered_1103["Fossil"] = filtered_1103["Total"] - filtered_1103["Plug-in"]
+    return (filtered_1103,)
 
 
 @app.cell
-def _(df_1103):
-    fuel_cols_1103 = [
+def _(filtered_1103):
+    filtered_1103.drop(columns=[
+        "Units",
         "Petrol",
         "Diesel",
         "Hybrid electric - petrol",
@@ -352,55 +447,73 @@ def _(df_1103):
         "Fuel cell electric",
         "Gas",
         "Other fuel types",
-        "Total"
+        "Zero emission"
+        ], inplace=True)
+    filtered_1103.columns.to_list()
+    return
+
+
+@app.cell
+def _(filtered_1103):
+    fuel_cols_1103 = [
+        "Total",
+        "Fossil",
+        "Plug-in"
     ]
 
-    long_1103 = df_1103.melt(
+    long_1103 = filtered_1103.melt(
         id_vars=["quarter_date", "year", "quarter", "BodyType"],
         value_vars=fuel_cols_1103,
         var_name="fuel_type",
         value_name="registered_licenses",
     )
 
-    # combine fuel types to broader types
-    fuel_family_map_1103 = {
-        "Petrol": "Fossil",
-        "Diesel": "Fossil",
-        "Gas": "Fossil",
+    # # combine fuel types to broader types
+    # fuel_family_map_1103 = {
+    #     "Petrol": "Fossil",
+    #     "Diesel": "Fossil",
+    #     "Gas": "Fossil",
 
-        "Battery electric": "EV",
-        "Fuel cell electric": "EV",
-        "Range extended electric": "EV",
+    #     "Battery electric": "Electrified",
+    #     "Fuel cell electric": "Fossil",
+    #     "Range extended electric": "Electrified",
 
-        "Plug-in hybrid electric - petrol": "Hybrid",
-        "Plug-in hybrid electric - diesel": "Hybrid",
-        "Hybrid electric - petrol": "Hybrid",
-        "Hybrid electric - diesel": "Hybrid",
+    #     "Plug-in hybrid electric - petrol": "Electrified",
+    #     "Plug-in hybrid electric - diesel": "Electrified",
+    #     "Hybrid electric - petrol": "Fossil",
+    #     "Hybrid electric - diesel": "Fossil",
 
-        "Total":"Total"
-    }
+    #     "Total":"Total"
+    # }
 
-    long_1103["fuel_group"] = (
-        long_1103["fuel_type"]
-        .map(fuel_family_map_1103)
-        .fillna("Other")
-    )
+    # long_1103["fuel_group"] = (
+    #     long_1103["fuel_type"]
+    #     .map(fuel_family_map_1103)
+    #     .fillna("Other")
+    # )
 
-    long_1103.head()
-
-    sum_1103 = long_1103.groupby(by=["quarter_date","fuel_group"],as_index=False).sum(numeric_only=True).sort_values(by="quarter_date")
+    sum_1103 = long_1103.groupby(by=["quarter_date","fuel_type"],as_index=False).sum(numeric_only=True).sort_values(by="quarter_date")
     sum_1103
     return (sum_1103,)
 
 
 @app.cell
+def _(sum_1103):
+    sum_1103["quarter_date"].unique().tolist()
+    return
+
+
+@app.cell
 def _(px, sum_1103):
+    # mask_1103b = sum_1103["quarter_date"] >= "2015"
+
     fig_1103 = px.line(
         sum_1103,
         x="quarter_date",
-        y="registered_licenses",
-        color="fuel_group",
-        title="Licensed vehicles in UK fuel type",
+        y=(sum_1103["registered_licenses"] * 1000),
+        color="fuel_type",
+        title="All licensed vehicles in UK fuel type",
+        labels={"y":"registrations"}
     )
 
     fig_1103.show()
@@ -416,7 +529,7 @@ def _(pd):
 
 @app.cell
 def _(df_1111):
-    df_1111.head()
+    print(df_1111.Fuel.unique())
     return
 
 
@@ -541,6 +654,18 @@ def _(long_1111, pd):
 
 
 @app.cell
+def _(long_1111):
+    print(long_1111.Fuel.unique())
+    return
+
+
+@app.cell
+def _(long_1111):
+    long_1111.value_counts("Fuel")
+    return
+
+
+@app.cell
 def _(long_1111_cln):
     # combine fuel types to broader types
     fuel_family_map_1111 = {
@@ -548,14 +673,16 @@ def _(long_1111_cln):
         "DIESEL": "Fossil",
         "GAS": "Fossil",
 
-        "BATTERY ELECTRIC": "EV",
-        "FUEL CELL ELECTRIC": "EV",
-        "RANGE EXTENDED ELECTRIC": "EV",
+        "BATTERY ELECTRIC": "Electrified",
+        "FUEL CELL ELECTRIC": "Electrified",
+        "RANGE EXTENDED ELECTRIC": "Electrified",
 
-        "PLUG-IN HYBRID ELECTRIC (PETROL)": "Hybrid",
-        "PLUG-IN HYBRID ELECTRIC (DIESEL)": "Hybrid",
-        "HYBRID ELECTRIC (PETROL)": "Hybrid",
-        "HYBRID ELECTRIC (DIESEL)": "Hybrid",
+        "PLUG-IN HYBRID ELECTRIC (PETROL)": "Electrified",
+        "PLUG-IN HYBRID ELECTRIC (DIESEL)": "Electrified",
+        "HYBRID ELECTRIC (PETROL)": "Electrified",
+        "HYBRID ELECTRIC (DIESEL)": "Electrified",
+
+        "OTHER FUEL TYPES":"Other Fuel Types",
 
         "Total":"Total"
     }
@@ -563,8 +690,10 @@ def _(long_1111_cln):
     long_1111_cln["fuel_group"] = (
         long_1111_cln["Fuel"]
         .map(fuel_family_map_1111)
-        .fillna("Other")
+        .fillna("Unmapped")
     )
+
+
 
     long_1111_cln.head()
     return
@@ -760,8 +889,10 @@ def _(long_1111_nttl):
 
 @app.cell
 def _(df_1111_young_market_share, px):
+    df_1111_young_market_share.sort_values("young_market_share",ascending=False, inplace=True)
+
     fig_1111_young_market_share = px.area(
-        df_1111_young_market_share.sort_values("young_market_share",ascending=False),
+        df_1111_young_market_share,
         x="quarter_date",
         y="young_market_share",
         color="fuel_group",
@@ -808,8 +939,10 @@ def _(long_1111_nttl, np, px):
         df_1111_old_mix["licensed_count"] / df_1111_old_mix["older_total_at_date"]
     )
 
+    df_1111_old_mix.sort_values("older_fleet_share",ascending=False, inplace=True)
+
     fig_1111_old_mix = px.area(
-        df_1111_old_mix.sort_values("older_fleet_share",ascending=False),
+        df_1111_old_mix,
         x="quarter_date",
         y="older_fleet_share",
         color="fuel_group",
@@ -986,12 +1119,40 @@ def _(sum_1153):
         .reset_index()
     )
 
-    ratio_1153["electrified_fossil_ratio"] = (
-        ratio_1153["Electrified"] / ratio_1153["Fossil"]
-    )
-
+    ratio_1153["Electrified/Fossil"] = ratio_1153["Electrified"]/ratio_1153["Fossil"]
     ratio_1153
     return (ratio_1153,)
+
+
+@app.cell
+def _(make_subplots, px, ratio_1153):
+    range_1153 = ratio_1153[ratio_1153["quarter_date"] >= "2015"]
+    subfig_1153 = make_subplots(specs=[[{"secondary_y": True}]])
+
+    #Put Dataframe in fig1 and fig2
+    fig_fuels_1153 = px.line(
+        range_1153,
+        x="quarter_date",
+        y=["Electrified","Fossil"],
+    )
+
+    fig_ratio_1153a = px.line(
+        range_1153,
+        x="quarter_date",
+        y="Electrified/Fossil",
+    )
+    #Change the axis for fig2
+    fig_ratio_1153a.update_traces(yaxis="y2")
+
+    #Add the figs to the subplot figure
+    subfig_1153.add_traces(fig_fuels_1153.data + fig_ratio_1153a.data)
+
+    #FORMAT subplot figure
+    subfig_1153.update_layout(title="New registrations by fuel type + ratio", yaxis=dict(title="New registrations"), yaxis2=dict(title="Ratio"))
+
+    #RECOLOR so as not to have overlapping colors
+    subfig_1153.for_each_trace(lambda t: t.update(line=dict(color=t.marker.color)))
+    return
 
 
 @app.cell
@@ -1013,6 +1174,12 @@ def _(pd):
     # import VEH9901 - Vehicles registered for the first time by body type, fuel type and keepership (private and company)
     df_9901a = pd.read_excel("Datasets/raw_DVLA/veh9901.ods",sheet_name="VEH9901",header=4)
     return (df_9901a,)
+
+
+@app.cell
+def _(df_9901a):
+    df_9901a.columns.to_list()
+    return
 
 
 @app.cell
@@ -1200,6 +1367,7 @@ def _(pd):
 
 @app.cell
 def _(df_411):
+    # convert monthly to quarterly
     quarter_map_411 = {
         "Jan to Mar": "Q1",
         "Apr to Jun": "Q2",
@@ -1227,11 +1395,11 @@ def _(df_411, pd):
 
     df_411.sort_values("quarter_date", inplace=True)
 
+    # interpolate missing data
     for col in price_cols_411:
         df_411[col] = pd.to_numeric(df_411[col], errors="coerce")
         df_411[col] = df_411[col].interpolate(method="linear")
 
-    # df_411[price_cols_411] = df_411[price_cols_411].ffill().bfill()
     return
 
 
@@ -1268,6 +1436,51 @@ def _(df_411, diesel_weight_0220, petrol_weight_0220):
     # average diesel/petrol prices and create index from 2015 q1
     df_411["fossil_avg"] = ((df_411["Premium Unleaded"]*petrol_weight_0220) + (df_411["Diesel"])*diesel_weight_0220).round(2)
     df_411.head()
+    return
+
+
+@app.cell
+def _(pd):
+    # UK Electricity system prices (p/kWh)
+    df_elec_uk = pd.read_excel("Datasets/raw_DESNZ/electricitypricesdataset181225.xlsx",sheet_name="2.Monthly SP Electricity",header=4)
+    return (df_elec_uk,)
+
+
+@app.cell
+def _(df_elec_uk):
+    df_elec_uk.head()
+    return
+
+
+@app.cell
+def _(df_elec_uk):
+    df_elec_uk_q = (
+        df_elec_uk
+        .assign(quarter_date=df_elec_uk["Month"].dt.to_period("Q").dt.start_time)
+        .groupby("quarter_date", as_index=False)["Monthly average"]
+        .mean()
+        .rename(columns={"Monthly average": "Quarterly average"})
+    )
+    return
+
+
+@app.cell
+def _(df_elec_uk, px):
+    fig_elec_uk = px.line(
+        df_elec_uk,
+        x="Month",
+        y="Monthly average"
+    )
+
+    fig_elec_uk.show()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ^^^ The above data doesn't go back far enough.  We want 2015 onwards.
+    """)
     return
 
 
@@ -1427,6 +1640,12 @@ def _(df_411, df_elec_q, pd, px):
 
 
 @app.cell
+def _(ratio_1153):
+    ratio_1153.columns
+    return
+
+
+@app.cell
 def _(pd, px, ratio_1153):
     # convert fuel table quarter_date to datetime
     quarter_start_month_map_1153 = {
@@ -1447,7 +1666,7 @@ def _(pd, px, ratio_1153):
     fig_ratio_1153 = px.line(
         ratio_1153,
         x="quarter_date_dt",
-        y=["electrified_fossil_ratio"]
+        y="Electrified/Fossil"
     )
 
     fig_ratio_1153.show()
@@ -1467,11 +1686,11 @@ def _(df_elec_fossil, ratio_1153):
 
     baseline_ratio_1153 = ratio_1153.loc[
         ratio_1153["quarter_date"] == "2016-Q3",
-        "electrified_fossil_ratio"
+        "Electrified/Fossil"
     ].iloc[0]
 
     ratio_1153["electrified_fossil_ratio_index"] = (
-        ((ratio_1153["electrified_fossil_ratio"] / baseline_ratio_1153) -1) * 100
+        ((ratio_1153["Electrified/Fossil"] / baseline_ratio_1153) -1) * 100
     )
 
     df_ratios = ratio_1153.merge(
@@ -1504,7 +1723,7 @@ def _(df_ratios, px):
 @app.cell
 def _(baseline_ratio_1153, baseline_ratio_elec_fossil, df_ratios):
     df_ratios["electrified_fossil_ratio_pct_change"] = (
-        (df_ratios["electrified_fossil_ratio"] / baseline_ratio_elec_fossil) - 1
+        (df_ratios["Electrified/Fossil"] / baseline_ratio_elec_fossil) - 1
     ) * 100
 
     df_ratios["fossil_electricity_ratio_pct_change"] = (
@@ -1534,6 +1753,107 @@ def _(df_ratios, px):
     )
 
     fig_compare.show()
+    return
+
+
+@app.cell
+def _(sum_1153):
+    # compare 1153 and 1111
+    # 1153 - new registrations by fuel type
+    # 1111 - all registrations per year by first registration
+    sum_1153.head()
+    return
+
+
+@app.cell
+def _(long_1111_nttl):
+    # Chart 4c - fuel share of all new cars in UK
+    new_1111 = long_1111_nttl.loc[long_1111_nttl["vehicle_age"] <= 0].copy()
+
+    df_1111_new_market_share = (
+        new_1111[new_1111["quarter_date"] >= "2014"]
+        .groupby(["quarter_date", "fuel_group"], as_index=False)["licensed_count"]
+        .sum()
+    )
+
+    df_1111_new_market_share["new_total_all_fuels"] = (
+        df_1111_new_market_share
+        .groupby("quarter_date")["licensed_count"]
+        .transform("sum")
+    )
+
+    df_1111_new_market_share["new_market_share"] = (
+        df_1111_new_market_share["licensed_count"]
+        / df_1111_new_market_share["new_total_all_fuels"]
+    )
+    return (df_1111_new_market_share,)
+
+
+@app.cell
+def _(df_1111_new_market_share, px):
+    df_1111_new_market_share.sort_values("new_market_share",ascending=False, inplace=True)
+
+    fig_1111_new_market_share = px.area(
+        df_1111_new_market_share,
+        x="quarter_date",
+        y="new_market_share",
+        color="fuel_group",
+        title="Fuel group share of new licensed cars ",
+        labels={
+            "quarter_date": "Quarter",
+            "new_market_share": "Share of all new licensed cars",
+            "fuel_group": "Fuel type",
+        },
+    )
+
+    fig_1111_new_market_share.update_xaxes(tickformat="%Y-Q%q")
+    fig_1111_new_market_share.show()
+    return
+
+
+@app.cell
+def _(long_1111_nttl):
+    # Chart 4d - fuel share of all new cars in UK
+    all_1111 = long_1111_nttl.loc[long_1111_nttl["vehicle_age"] >= 0].copy()
+
+    df_1111_all_market_share = (
+        all_1111[all_1111["quarter_date"] >= "2014"]
+        .groupby(["quarter_date", "fuel_group"], as_index=False)["licensed_count"]
+        .sum()
+    )
+
+    df_1111_all_market_share["new_total_all_fuels"] = (
+        df_1111_all_market_share
+        .groupby("quarter_date")["licensed_count"]
+        .transform("sum")
+    )
+
+    df_1111_all_market_share["new_market_share"] = (
+        df_1111_all_market_share["licensed_count"]
+        / df_1111_all_market_share["new_total_all_fuels"]
+    )
+    return (df_1111_all_market_share,)
+
+
+@app.cell
+def _(df_1111_all_market_share, px):
+    df_1111_all_market_share.sort_values("new_market_share",ascending=False, inplace=True)
+
+    fig_1111_all_market_share = px.area(
+        df_1111_all_market_share,
+        x="quarter_date",
+        y="new_market_share",
+        color="fuel_group",
+        title="Fuel group share of all licensed cars ",
+        labels={
+            "quarter_date": "Quarter",
+            "new_market_share": "Share of all licensed cars",
+            "fuel_group": "Fuel type",
+        },
+    )
+
+    fig_1111_all_market_share.update_xaxes(tickformat="%Y-Q%q")
+    fig_1111_all_market_share.show()
     return
 
 
