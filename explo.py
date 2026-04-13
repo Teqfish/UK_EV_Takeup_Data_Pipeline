@@ -1432,6 +1432,13 @@ def _(df_411, px):
 
 
 @app.cell
+def _(diesel_weight_0220, petrol_weight_0220):
+    print(petrol_weight_0220)
+    print(diesel_weight_0220)
+    return
+
+
+@app.cell
 def _(df_411, diesel_weight_0220, petrol_weight_0220):
     # average diesel/petrol prices and create index from 2015 q1
     df_411["fossil_avg"] = ((df_411["Premium Unleaded"]*petrol_weight_0220) + (df_411["Diesel"])*diesel_weight_0220).round(2)
