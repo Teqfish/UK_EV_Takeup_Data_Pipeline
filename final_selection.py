@@ -19,11 +19,24 @@ def _():
 
 
 @app.cell
-def _(pd, px):
-    ### COMPLETE - Wholesale Electricity Prices (UK)
+def _(pd):
+    ### COMPLETE - IMPORT - Wholesale Electricity Prices (UK)
 
     # Load EUR-GBP Monthly Exchange Rate
     df_eur_gbp_fx = pd.read_csv("Datasets/raw_DESNZ/Bank of England Database.csv")
+    return (df_eur_gbp_fx,)
+
+
+@app.cell
+def _(df_eur_gbp_fx):
+    with open("table_info.txt", "a") as f:
+        print(f'df_eur_gbp_fx info is {df_eur_gbp_fx.info()}', file=f)
+    return
+
+
+@app.cell
+def _(df_eur_gbp_fx, pd):
+    ### COMPLETE - PROCESS - Wholesale Electricity Prices (UK)
 
     # rename columns
     df_eur_gbp_fx.rename(
@@ -47,8 +60,24 @@ def _(pd, px):
         .first()
     )
 
+    return (df_eur_gbp_fx_monthly,)
+
+
+@app.cell
+def _(pd):
     # EU Electricity prices
     df_elec = pd.read_csv("Datasets/raw_DESNZ/european_wholesale_electricity_price_data_monthly.csv")
+    return (df_elec,)
+
+
+@app.cell
+def _(df_elec):
+    df_elec.info()
+    return
+
+
+@app.cell
+def _(df_elec, df_eur_gbp_fx_monthly, pd, px):
 
     # df_elec["Price (GBP/MWhe)"]
     df_elec_gb = df_elec[df_elec["ISO3 Code"] == "GBR"].copy()
@@ -99,11 +128,24 @@ def _(pd, px):
 
 
 @app.cell
-def _(pd, px):
+def _(pd):
     ### COMPLETE - 411 - Wholesale Petroleum Products Prices (UK)
 
     # import table_411_413__6 - Typical retail prices of petroleum products and a crude oil price index (quarterly)
     df_411 = pd.read_excel("Datasets/raw_DESNZ/table_411_413__6_.xlsx",sheet_name="4.1.1 (Quarterly)",header=9)
+
+    return (df_411,)
+
+
+@app.cell
+def _(df_411):
+    df_411_info = df_411.info()
+    print(df_411_info)
+    return
+
+
+@app.cell
+def _(df_411, pd, px):
 
     # convert monthly to quarterly
     quarter_map_411 = {
@@ -167,7 +209,7 @@ def _(pd, px):
     )
 
     fig_411.show()
-    return (df_411,)
+    return
 
 
 @app.cell
@@ -260,6 +302,12 @@ def _(pd):
     # import VEH1103 - all licensed vehicles by fuel type
     df_1103 = pd.read_excel("Datasets/raw_DVLA/veh1103.ods",sheet_name="VEH1103a_RoadUsing",header=4)
     return (df_1103,)
+
+
+@app.cell
+def _(df_1103):
+    df_1103.info()
+    return
 
 
 @app.cell
@@ -415,6 +463,12 @@ def _(pd):
     # COMPLETE - IMPORT VEH1153 - First-time licensed vehicles by fuel type quarterly
     df_1153 = pd.read_excel("Datasets/raw_DVLA/veh1153.ods",sheet_name="VEH1153a_RoadUsing",header=4)
     return (df_1153,)
+
+
+@app.cell
+def _(df_1153):
+    df_1153.info()
+    return
 
 
 @app.cell

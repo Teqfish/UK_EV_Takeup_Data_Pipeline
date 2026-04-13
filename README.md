@@ -1,4 +1,83 @@
 # UK_EV_Takeup_Data_Pipeline
+
+DESNZ / BoE
+	•	raw_bank_of_england_eur_gbp_fx
+	•	raw_european_wholesale_electricity_prices
+	•	raw_desnz_petroleum_products_prices
+
+DVLA
+	•	raw_dvla_veh1103
+	•	raw_dvla_veh1153
+
+GCS
+  •	prepared_bank_of_england_eur_gbp_fx
+	•	prepared_european_wholesale_electricity_prices
+	•	prepared_desnz_petroleum_products_prices
+	•	prepared_dvla_veh1103
+	•	prepared_dvla_veh1153
+
+BQ
+	•	raw_bank_of_england_eur_gbp_fx
+	•	raw_european_wholesale_electricity_prices
+	•	raw_desnz_petroleum_products_prices
+	•	raw_dvla_veh1103
+	•	raw_dvla_veh1153
+
+	•	stg_bank_of_england_eur_gbp_fx
+	•	stg_european_wholesale_electricity_prices
+	•	stg_desnz_petroleum_products_prices
+	•	stg_dvla_veh1103
+	•	stg_dvla_veh1153
+
+	•	int_eur_gbp_fx_monthly
+	•	int_electricity_prices_gb_monthly
+	•	int_electricity_prices_gb_quarterly
+	•	int_petroleum_prices_quarterly
+	•	int_fossil_electricity_ratio_quarterly
+	•	int_vehicle_registrations_all_quarterly
+	•	int_vehicle_registrations_new_quarterly
+	•	int_vehicle_ratios_all_quarterly
+	•	int_vehicle_ratios_new_quarterly
+	•	int_transition_ratios_quarterly
+
+	•	mart_energy_prices_quarterly
+    Columns:
+    •	quarter_date
+    •	premium_unleaded
+    •	diesel
+    •	crude_oil_index
+    •	fossil_avg
+    •	electricity_price_gbp_mwhe
+    •	electricity_price_p_kwh
+    •	fossil_electricity_ratio
+    •	fossil_electricity_ratio_pct_change
+	•	mart_vehicle_registrations_new_by_fuel_type
+    Columns:
+    •	quarter_date
+    •	fuel_group
+    •	registered_licenses
+	•	mart_vehicle_registrations_all_by_fuel_type
+    Columns:
+    •	quarter_date
+    •	fuel_group
+    •	registered_licenses
+	•	mart_transition_ratios_quarterly
+    Columns:
+    •	quarter_date
+    •	fossil_electricity_ratio
+    •	fossil_electricity_ratio_pct_change
+    •	new_plugin_fossil_ratio
+    •	new_plugin_fossil_ratio_pct_change
+    •	all_plugin_fossil_ratio
+    •	all_plugin_fossil_ratio_pct_change
+	•	mart_transition_scorecards
+  Columns:
+    •	as_of_quarter
+    •	avg_pct_change_fossil_electricity_ratio_5y
+    •	avg_pct_change_new_plugin_fossil_ratio_5y
+    •	avg_pct_change_all_plugin_fossil_ratio_5y
+
+
 A data pipeline to compare the price of fuel with EV takeup in the UK
 
 df_411
@@ -30,4 +109,4 @@ df_1103
 df_1153
   - First time registered vehicles by fuel type
   - quarterly
-  - 
+  -
