@@ -19,7 +19,7 @@ def _():
 @app.cell
 def _(pd):
     # import VEH0105
-    df_0105 = pd.read_excel("Datasets/raw_DVLA/veh0105.ods",sheet_name="VEH0105",header=4)
+    df_0105 = pd.read_excel("datasets/raw_DVLA/veh0105.ods",sheet_name="VEH0105",header=4)
     return (df_0105,)
 
 
@@ -84,7 +84,7 @@ def _(px, sum_0105):
 @app.cell
 def _(pd):
     # import VEH0142
-    df_0142 = pd.read_excel("Datasets/raw_DVLA/veh0142.ods",sheet_name="VEH0142",header=4)
+    df_0142 = pd.read_excel("datasets/raw_DVLA/veh0142.ods",sheet_name="VEH0142",header=4)
     return (df_0142,)
 
 
@@ -147,7 +147,7 @@ def _(fig_0105):
 @app.cell
 def _(pd):
     # import VEH0171
-    df_0171a = pd.read_excel("Datasets/raw_DVLA/veh0171.ods",sheet_name="VEH0171a_Fuel",header=4)
+    df_0171a = pd.read_excel("datasets/raw_DVLA/veh0171.ods",sheet_name="VEH0171a_Fuel",header=4)
     return (df_0171a,)
 
 
@@ -269,7 +269,7 @@ def _(px, sum_0171):
 @app.cell
 def _(pd):
     # import VEH0181 - first-time plug-in registration
-    df_0181a = pd.read_excel("Datasets/raw_DVLA/veh0181.ods",sheet_name="VEH0181a_Fuel",header=4)
+    df_0181a = pd.read_excel("datasets/raw_DVLA/veh0181.ods",sheet_name="VEH0181a_Fuel",header=4)
     return (df_0181a,)
 
 
@@ -387,7 +387,7 @@ def _(px, sum_0181):
 @app.cell
 def _(pd):
     # import VEH1103 - all licensed vehicles by fuel type
-    df_1103a = pd.read_excel("Datasets/raw_DVLA/veh1103.ods",sheet_name="VEH1103a_RoadUsing",header=4)
+    df_1103a = pd.read_excel("datasets/raw_DVLA/veh1103.ods",sheet_name="VEH1103a_RoadUsing",header=4)
     return (df_1103a,)
 
 
@@ -523,7 +523,7 @@ def _(px, sum_1103):
 @app.cell
 def _(pd):
     # import VEH1111 - Licensed vehicles at the end of the year by year of first use
-    df_1111 = pd.read_excel("Datasets/raw_DVLA/veh1111.ods",sheet_name="VEH1111",header=4)
+    df_1111 = pd.read_excel("datasets/raw_DVLA/veh1111.ods",sheet_name="VEH1111",header=4)
     return (df_1111,)
 
 
@@ -962,7 +962,7 @@ def _(long_1111_nttl, np, px):
 @app.cell
 def _(pd):
     # import VEH1153 - Vehicles registered for the first time by body type, fuel type and keepership (private and company)
-    df_1153a = pd.read_excel("Datasets/raw_DVLA/veh1153.ods",sheet_name="VEH1153b_All",header=4)
+    df_1153a = pd.read_excel("datasets/raw_DVLA/veh1153.ods",sheet_name="VEH1153b_All",header=4)
     df_1153a.head(20)
     return (df_1153a,)
 
@@ -1172,7 +1172,7 @@ def _(px, sum_1153):
 @app.cell
 def _(pd):
     # import VEH9901 - Vehicles registered for the first time by body type, fuel type and keepership (private and company)
-    df_9901a = pd.read_excel("Datasets/raw_DVLA/veh9901.ods",sheet_name="VEH9901",header=4)
+    df_9901a = pd.read_excel("datasets/raw_DVLA/veh9901.ods",sheet_name="VEH9901",header=4)
     return (df_9901a,)
 
 
@@ -1206,7 +1206,7 @@ def _(agg_9901, px):
 @app.cell
 def _(pd):
     # import VEH9902- Cars and light goods vehicles registered for the first time [note 1] by body type and fuel type [note 2], United Kingdom from January 2020.
-    df_9902a = pd.read_excel("Datasets/raw_DVLA/veh9902.ods",sheet_name="VEH9902a",header=4)
+    df_9902a = pd.read_excel("datasets/raw_DVLA/veh9902.ods",sheet_name="VEH9902a",header=4)
     return (df_9902a,)
 
 
@@ -1255,7 +1255,7 @@ def _(agg_9902, px):
 @app.cell
 def _(pd):
     # import df_VEH0220- Cars and light goods vehicles registered for the first time [note 1] by body type and fuel type [note 2], United Kingdom from January 2020.
-    df_0220a = pd.read_csv("Datasets/raw_DVLA/df_VEH0220.csv")
+    df_0220a = pd.read_csv("datasets/raw_DVLA/df_VEH0220.csv")
     df_0220a
     return (df_0220a,)
 
@@ -1361,7 +1361,7 @@ def _(long_0220):
 @app.cell
 def _(pd):
     # import table_411_413__6 - Typical retail prices of petroleum products and a crude oil price index (quarterly)
-    df_411 = pd.read_excel("Datasets/raw_DESNZ/table_411_413__6_.xlsx",sheet_name="4.1.1 (Quarterly)",header=9)
+    df_411 = pd.read_excel("datasets/raw_DESNZ/table_411_413__6_.xlsx",sheet_name="4.1.1 (Quarterly)",header=9)
     return (df_411,)
 
 
@@ -1449,7 +1449,7 @@ def _(df_411, diesel_weight_0220, petrol_weight_0220):
 @app.cell
 def _(pd):
     # UK Electricity system prices (p/kWh)
-    df_elec_uk = pd.read_excel("Datasets/raw_DESNZ/electricitypricesdataset181225.xlsx",sheet_name="2.Monthly SP Electricity",header=4)
+    df_elec_uk = pd.read_excel("datasets/raw_DESNZ/electricitypricesdataset181225.xlsx",sheet_name="2.Monthly SP Electricity",header=4)
     return (df_elec_uk,)
 
 
@@ -1494,7 +1494,7 @@ def _(mo):
 @app.cell
 def _(pd):
     # EU Electricity prices
-    df_elec = pd.read_csv("Datasets/raw_DESNZ/european_wholesale_electricity_price_data_monthly.csv")
+    df_elec = pd.read_csv("datasets/raw_DESNZ/european_wholesale_electricity_price_data_monthly.csv")
     return (df_elec,)
 
 
@@ -1521,7 +1521,7 @@ def _(df_elec_gb, px):
 @app.cell
 def _(pd):
     # GBP/EUR exchange rate
-    df_gbp_eur = pd.read_csv("Datasets/raw_DESNZ/Bank of England Database.csv")
+    df_gbp_eur = pd.read_csv("datasets/raw_DESNZ/Bank of England Database.csv")
     return (df_gbp_eur,)
 
 

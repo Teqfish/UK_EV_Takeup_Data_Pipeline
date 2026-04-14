@@ -19,24 +19,11 @@ def _():
 
 
 @app.cell
-def _(pd):
-    ### COMPLETE - IMPORT - Wholesale Electricity Prices (UK)
+def _(pd, px):
+    ### COMPLETE - Wholesale Electricity Prices (UK)
 
     # Load EUR-GBP Monthly Exchange Rate
-    df_eur_gbp_fx = pd.read_csv("Datasets/raw_DESNZ/Bank of England Database.csv")
-    return (df_eur_gbp_fx,)
-
-
-@app.cell
-def _(df_eur_gbp_fx):
-    with open("table_info.txt", "a") as f:
-        print(f'df_eur_gbp_fx info is {df_eur_gbp_fx.info()}', file=f)
-    return
-
-
-@app.cell
-def _(df_eur_gbp_fx, pd):
-    ### COMPLETE - PROCESS - Wholesale Electricity Prices (UK)
+    df_eur_gbp_fx = pd.read_csv("datasets/raw_DESNZ/Bank of England Database.csv")
 
     # rename columns
     df_eur_gbp_fx.rename(
@@ -60,24 +47,8 @@ def _(df_eur_gbp_fx, pd):
         .first()
     )
 
-    return (df_eur_gbp_fx_monthly,)
-
-
-@app.cell
-def _(pd):
     # EU Electricity prices
-    df_elec = pd.read_csv("Datasets/raw_DESNZ/european_wholesale_electricity_price_data_monthly.csv")
-    return (df_elec,)
-
-
-@app.cell
-def _(df_elec):
-    df_elec.info()
-    return
-
-
-@app.cell
-def _(df_elec, df_eur_gbp_fx_monthly, pd, px):
+    df_elec = pd.read_csv("datasets/raw_DESNZ/european_wholesale_electricity_price_data_monthly.csv")
 
     # df_elec["Price (GBP/MWhe)"]
     df_elec_gb = df_elec[df_elec["ISO3 Code"] == "GBR"].copy()
@@ -128,24 +99,11 @@ def _(df_elec, df_eur_gbp_fx_monthly, pd, px):
 
 
 @app.cell
-def _(pd):
+def _(pd, px):
     ### COMPLETE - 411 - Wholesale Petroleum Products Prices (UK)
 
     # import table_411_413__6 - Typical retail prices of petroleum products and a crude oil price index (quarterly)
-    df_411 = pd.read_excel("Datasets/raw_DESNZ/table_411_413__6_.xlsx",sheet_name="4.1.1 (Quarterly)",header=9)
-
-    return (df_411,)
-
-
-@app.cell
-def _(df_411):
-    df_411_info = df_411.info()
-    print(df_411_info)
-    return
-
-
-@app.cell
-def _(df_411, pd, px):
+    df_411 = pd.read_excel("datasets/raw_DESNZ/table_411_413__6_.xlsx",sheet_name="4.1.1 (Quarterly)",header=9)
 
     # convert monthly to quarterly
     quarter_map_411 = {
@@ -209,16 +167,12 @@ def _(df_411, pd, px):
     )
 
     fig_411.show()
-    return
+    return (df_411,)
 
 
 @app.cell
 def _(df_411, df_elec_q, pd, px):
     ### COMPLETE - FOSSIL/ELECTRICITY RATIO
-
-    petrol_weight_0220 = 0.8059
-    diesel_weight_0220 = 0.1941
-    df_411["fossil_avg"] = ((df_411["Premium Unleaded"]*petrol_weight_0220) + (df_411["Diesel"])*diesel_weight_0220).round(2)
 
     # convert fuel table quarter_date to datetime
     quarter_start_month_map_411 = {
@@ -298,16 +252,440 @@ def _(df_elec_fossil, px):
 
 @app.cell
 def _(pd):
-    # COMPLETE - IMPORT VEH1103 - All licensed vehicles by fuel type quarterly
-    # import VEH1103 - all licensed vehicles by fuel type
-    df_1103 = pd.read_excel("Datasets/raw_DVLA/veh1103.ods",sheet_name="VEH1103a_RoadUsing",header=4)
-    return (df_1103,)
+    # import VEH1111 - Licensed vehicles at the end of the year by year of first use
+    df_1111 = pd.read_excel("datasets/raw_DVLA/veh1111.ods",sheet_name="VEH1111",header=4)
+    return (df_1111,)
 
 
 @app.cell
-def _(df_1103):
-    df_1103.info()
+def _(df_1111, pd):
+    # split and clean date column
+    df_1111b = df_1111.rename(columns={"Date": "date_label","Geography [note 1]":"geography","Unknown [note 2]":"unknown"}).copy()
+    df_1111_gb = df_1111b.loc[df_1111b["geography"] == "Great Britain"].copy()
+    df_1111_gb["date_label"] = (
+        df_1111_gb["date_label"]
+        .astype(str)
+        .str.extract(r"(\d{4})\s*Q([1-4])")[0]
+        + "-Q"
+        + df_1111_gb["date_label"].astype(str).str.extract(r"(\d{4})\s*Q([1-4])")[1]
+    )
+
+    # extract year and quarter directly from all rows
+    df_1111_gb["year"] = (
+        df_1111_gb["date_label"]
+        .astype(str)
+        .str.extract(r"(\d{4})")[0]
+    )
+
+    df_1111_gb["quarter"] = (
+        df_1111_gb["date_label"]
+        .astype(str)
+        .str.extract(r"Q([1-4])")[0]
+    )
+
+    # format quarter as Q1, Q2, etc.
+    df_1111_gb["quarter"] = "Q" + df_1111_gb["quarter"].astype(str)
+
+    df_1111_gb["quarter_date"] = (
+        df_1111_gb["year"].astype("string") + "-" +
+        df_1111_gb["quarter"].astype("string").str.zfill(2)
+    )
+
+    # cast types
+    df_1111_gb["year"] = pd.to_numeric(df_1111_gb["year"], errors="coerce").astype("Int64")
+    df_1111_gb["quarter"] = df_1111_gb["quarter"].astype("string")
+
+    # cast year column names to string and strip
+    df_1111_gb.columns = df_1111_gb.columns.astype(str).str.strip()
+
+    # create list of years
+    first_use_year_cols_1111 = [c for c in df_1111_gb.columns if c.isdigit()]
+
+    # cast back to numeric
+    df_1111_gb[first_use_year_cols_1111] = df_1111_gb[first_use_year_cols_1111].apply(
+        pd.to_numeric,
+        errors="coerce"
+    )
+
+    # refresh after fragmentation
+    df_1111_gba = df_1111_gb.copy()
+
+    # agg on bodytype and drop columns
+    agg_1111 = (
+        df_1111_gba
+        .drop(columns=["Units", "unknown","geography"], errors="ignore")
+        .groupby(["date_label", "Fuel"], as_index=False)[first_use_year_cols_1111 + ["Total"]]
+        .sum()
+    )
+
+    # unpivot
+    long_1111 = agg_1111.melt(
+        id_vars=["date_label", "Fuel", "Total"],
+        value_vars=first_use_year_cols_1111,
+        var_name="first_use_year",
+        value_name="licensed_count"
+    )
+
+    # add enriched columns
+    long_1111["first_use_year"] = pd.to_numeric(long_1111["first_use_year"], errors="coerce").astype("Int64")
+    long_1111["licensed_count"] = pd.to_numeric(long_1111["licensed_count"], errors="coerce")
+
+    long_1111["obs_year"] = pd.to_numeric(
+        long_1111["date_label"].str.extract(r"(\d{4})")[0],
+        errors="coerce"
+    ).astype("Int64")
+
+    long_1111["quarter"] = long_1111["date_label"].str.extract(r"Q([1-4])")[0].astype("string")
+    long_1111["quarter"] = "Q" + long_1111["quarter"]
+
+    quarter_start_month_map_1111 = {"Q1": 1, "Q2": 4, "Q3": 7, "Q4": 10}
+    long_1111["quarter_start_month"] = (
+        long_1111["quarter"]
+        .map(quarter_start_month_map_1111)
+        .astype("Int64")
+    )
+    long_1111["quarter_date"] = pd.to_datetime(
+        long_1111["obs_year"].astype("string")
+        + "-"
+        + long_1111["quarter_start_month"].astype("string").str.zfill(2)
+        + "-01",
+        errors="coerce"
+    )
+
+    long_1111["vehicle_age"] = long_1111["obs_year"] - long_1111["first_use_year"]
+
+    # drop 0 count rows
+    long_1111_cln= long_1111.loc[
+        long_1111["licensed_count"].notna()
+        & (long_1111["licensed_count"] > 0)
+        & long_1111["vehicle_age"].notna()
+        & (long_1111["vehicle_age"] >= 0)
+    ].copy()
+
+    # combine fuel types to broader types
+    fuel_family_map_1111 = {
+        "PETROL": "Fossil",
+        "DIESEL": "Fossil",
+        "GAS": "Fossil",
+
+        "BATTERY ELECTRIC": "Electrified",
+        "FUEL CELL ELECTRIC": "Electrified",
+        "RANGE EXTENDED ELECTRIC": "Electrified",
+
+        "PLUG-IN HYBRID ELECTRIC (PETROL)": "Electrified",
+        "PLUG-IN HYBRID ELECTRIC (DIESEL)": "Electrified",
+        "HYBRID ELECTRIC (PETROL)": "Electrified",
+        "HYBRID ELECTRIC (DIESEL)": "Electrified",
+
+        "OTHER FUEL TYPES":"Other Fuel Types",
+
+        "Total":"Total"
+    }
+
+    long_1111_cln["fuel_group"] = (
+        long_1111_cln["Fuel"]
+        .map(fuel_family_map_1111)
+        .fillna("Unmapped")
+    )
+
+    long_1111_nttl = long_1111_cln[long_1111_cln["fuel_group"]!= "Total"].copy()
+
+    return df_1111_gb, long_1111_nttl
+
+
+@app.cell
+def _(df_1111_gb):
+    df_1111_gb["date_label"].unique()
     return
+
+
+@app.cell
+def _(long_1111_nttl, px):
+    # Chart 4c - ratio of new Electrified vs Fossil licensed cars in UK
+
+    new_1111 = long_1111_nttl.loc[
+        (long_1111_nttl["vehicle_age"] == 0)
+        & (long_1111_nttl["fuel_group"].isin(["Fossil", "Electrified"]))
+    ].copy()
+
+    ratio_1111_new = (
+        new_1111.loc[new_1111["quarter_date"] >= "2014"]
+        .groupby(["quarter_date", "fuel_group"], as_index=False)["licensed_count"]
+        .sum()
+        .pivot(index="quarter_date", columns="fuel_group", values="licensed_count")
+        .reset_index()
+    )
+
+    ratio_1111_new["electrified_fossil_ratio"] = (
+        ratio_1111_new["Electrified"] / ratio_1111_new["Fossil"]
+    )
+
+    fig_1111_new_ratio = px.line(
+        ratio_1111_new,
+        x="quarter_date",
+        y="electrified_fossil_ratio",
+        title="Ratio of new Electrified to Fossil licensed cars",
+        labels={
+            "quarter_date": "Quarter",
+            "electrified_fossil_ratio": "Electrified / Fossil ratio",
+        },
+    )
+
+    fig_1111_new_ratio.update_xaxes(tickformat="%Y-Q%q")
+    fig_1111_new_ratio.show()
+    return (ratio_1111_new,)
+
+
+@app.cell
+def _(long_1111_nttl, px):
+    # Chart 4d - ratio of all other Electrified vs Fossil licensed cars in UK
+
+    other_1111 = long_1111_nttl.loc[
+        (long_1111_nttl["vehicle_age"] > 0)
+        & (long_1111_nttl["fuel_group"].isin(["Fossil", "Electrified"]))
+    ].copy()
+
+    ratio_1111_other = (
+        other_1111.loc[other_1111["quarter_date"] >= "2014"]
+        .groupby(["quarter_date", "fuel_group"], as_index=False)["licensed_count"]
+        .sum()
+        .pivot(index="quarter_date", columns="fuel_group", values="licensed_count")
+        .reset_index()
+    )
+
+    ratio_1111_other["electrified_fossil_ratio"] = (
+        ratio_1111_other["Electrified"] / ratio_1111_other["Fossil"]
+    )
+
+    fig_1111_other_ratio = px.line(
+        ratio_1111_other,
+        x="quarter_date",
+        y="electrified_fossil_ratio",
+        title="Ratio of non-new Electrified to Fossil licensed cars",
+        labels={
+            "quarter_date": "Quarter",
+            "electrified_fossil_ratio": "Electrified / Fossil ratio",
+        },
+    )
+
+    fig_1111_other_ratio.update_xaxes(tickformat="%Y-Q%q")
+    fig_1111_other_ratio.show()
+    return (ratio_1111_other,)
+
+
+@app.cell
+def _(px, ratio_1111_new):
+    ### Convert 4c from ratio to percentage change
+
+    baseline_quarter_1111_new = ratio_1111_new["quarter_date"].min()
+
+    baseline_ratio_1111_new = (
+        ratio_1111_new.loc[
+            ratio_1111_new["quarter_date"] == baseline_quarter_1111_new,
+            "electrified_fossil_ratio"
+        ]
+        .squeeze()
+    )
+
+    ratio_1111_new["electrified_fossil_ratio_pct_change"] = (
+        (ratio_1111_new["electrified_fossil_ratio"] / baseline_ratio_1111_new) - 1
+    ) * 100
+
+    fig_1111_new_ratio_pct = px.line(
+        ratio_1111_new,
+        x="quarter_date",
+        y="electrified_fossil_ratio_pct_change",
+        title="Percentage change in new Electrified/Fossil car ratio from 2015 Q1 baseline",
+        labels={
+            "quarter_date": "Quarter",
+            "electrified_fossil_ratio_pct_change": "% change from 2015 Q1",
+        },
+    )
+
+    fig_1111_new_ratio_pct.update_xaxes(tickformat="%Y-Q%q")
+    fig_1111_new_ratio_pct.show()
+    return
+
+
+@app.cell
+def _(px, ratio_1111_other):
+    ### Convert 4d from ratio to percentage change
+
+    baseline_quarter_1111_other = ratio_1111_other["quarter_date"].min()
+
+    baseline_ratio_1111_other = (
+        ratio_1111_other.loc[
+            ratio_1111_other["quarter_date"] == baseline_quarter_1111_other,
+            "electrified_fossil_ratio"
+        ]
+        .squeeze()
+    )
+
+    ratio_1111_other["electrified_fossil_ratio_pct_change"] = (
+        (ratio_1111_other["electrified_fossil_ratio"] / baseline_ratio_1111_other) - 1
+    ) * 100
+
+    fig_1111_other_ratio_pct = px.line(
+        ratio_1111_other,
+        x="quarter_date",
+        y="electrified_fossil_ratio_pct_change",
+        title="Percentage change in non-new Electrified/Fossil car ratio from baseline",
+        labels={
+            "quarter_date": "Quarter",
+            "electrified_fossil_ratio_pct_change": "% change from baseline",
+        },
+    )
+
+    fig_1111_other_ratio_pct.update_xaxes(tickformat="%Y-Q%q")
+    fig_1111_other_ratio_pct.show()
+    return
+
+
+@app.cell
+def _(df_elec_fossil, px, ratio_1111_new, ratio_1111_other):
+    df_combined_ratios = (
+        ratio_1111_new[["quarter_date", "electrified_fossil_ratio_pct_change"]]
+        .rename(columns={"electrified_fossil_ratio_pct_change": "new_ratio_pct_change"})
+        .merge(
+            ratio_1111_other[["quarter_date", "electrified_fossil_ratio_pct_change"]]
+            .rename(columns={"electrified_fossil_ratio_pct_change": "other_ratio_pct_change"}),
+            on="quarter_date",
+            how="inner",
+        )
+        .merge(
+            df_elec_fossil[["quarter_date", "fossil_electricity_ratio_pct_change"]],
+            on="quarter_date",
+            how="inner",
+        )
+        .sort_values("quarter_date")
+        .copy()
+    )
+
+    fig_combined_ratios = px.line(
+        df_combined_ratios,
+        x="quarter_date",
+        y=[
+            "new_ratio_pct_change",
+            "other_ratio_pct_change",
+            "fossil_electricity_ratio_pct_change",
+        ],
+        title="Percentage change from baseline: vehicle ratios vs fossil/electricity price ratio",
+        labels={
+            "quarter_date": "Quarter",
+            "value": "% change from baseline",
+            "variable": "Series",
+            "new_ratio_pct_change": "New Electrified/Fossil car ratio",
+            "other_ratio_pct_change": "Other Electrified/Fossil car ratio",
+            "fossil_electricity_ratio_pct_change": "Fossil/Electricity price ratio",
+        },
+        color_discrete_map={
+            "new_ratio_pct_change": "red",
+            "other_ratio_pct_change": "firebrick",
+            "fossil_electricity_ratio_pct_change": "blue",
+        },
+    )
+
+    fig_combined_ratios.update_xaxes(tickformat="%Y-Q%q")
+    fig_combined_ratios.show()
+    return (df_combined_ratios,)
+
+
+@app.cell
+def _(df_combined_ratios, make_subplots):
+
+    import plotly.graph_objects as go
+
+    fig_combined_ratios_secondary = make_subplots(specs=[[{"secondary_y": True}]])
+
+    fig_combined_ratios_secondary.add_trace(
+        go.Scatter(
+            x=df_combined_ratios["quarter_date"],
+            y=df_combined_ratios["new_ratio_pct_change"],
+            name="New Electrified/Fossil car ratio",
+            line=dict(color="red"),
+        ),
+        secondary_y=False,
+    )
+
+    fig_combined_ratios_secondary.add_trace(
+        go.Scatter(
+            x=df_combined_ratios["quarter_date"],
+            y=df_combined_ratios["other_ratio_pct_change"],
+            name="Other Electrified/Fossil car ratio",
+            line=dict(color="firebrick"),
+        ),
+        secondary_y=False,
+    )
+
+    fig_combined_ratios_secondary.add_trace(
+        go.Scatter(
+            x=df_combined_ratios["quarter_date"],
+            y=df_combined_ratios["fossil_electricity_ratio_pct_change"],
+            name="Fossil/Electricity price ratio",
+            line=dict(color="blue"),
+        ),
+        secondary_y=True,
+    )
+
+    fig_combined_ratios_secondary.update_layout(
+        title="Percentage change from baseline: vehicle ratios vs fossil/electricity price ratio",
+        xaxis_title="Quarter",
+        legend_title="Series",
+    )
+
+    fig_combined_ratios_secondary.update_xaxes(tickformat="%Y-Q%q")
+    fig_combined_ratios_secondary.update_yaxes(
+        title_text="% change from baseline (vehicle ratios)",
+        secondary_y=False,
+    )
+    fig_combined_ratios_secondary.update_yaxes(
+        title_text="% change from baseline (price ratio)",
+        secondary_y=True,
+    )
+
+    fig_combined_ratios_secondary.show()
+    return
+
+
+@app.cell
+def _(ratio_1111_new):
+    ratio_1111_new["quarter_date"].sort_values().tolist()[:10]
+
+    return
+
+
+@app.cell
+def _(ratio_1111_other):
+    ratio_1111_other["quarter_date"].sort_values().tolist()[:10]
+
+    return
+
+
+@app.cell
+def _(df_elec_fossil):
+    df_elec_fossil["quarter_date"].sort_values().tolist()[:10]
+
+    return
+
+
+@app.cell
+def _(df_combined_ratios):
+    df_combined_ratios["quarter_date"].sort_values().tolist()[:10]
+    return
+
+
+@app.cell
+def _(df_1111_gb):
+    df_1111_gb["date_label"].unique()
+    return
+
+
+@app.cell
+def _(pd):
+    # COMPLETE - IMPORT VEH1103 - All licensed vehicles by fuel type quarterly
+    # import VEH1103 - all licensed vehicles by fuel type
+    df_1103 = pd.read_excel("datasets/raw_DVLA/veh1103.ods",sheet_name="VEH1103a_RoadUsing",header=4)
+    return (df_1103,)
 
 
 @app.cell
@@ -461,14 +839,8 @@ def _(make_subplots, pd, px, sum_1103):
 @app.cell
 def _(pd):
     # COMPLETE - IMPORT VEH1153 - First-time licensed vehicles by fuel type quarterly
-    df_1153 = pd.read_excel("Datasets/raw_DVLA/veh1153.ods",sheet_name="VEH1153a_RoadUsing",header=4)
+    df_1153 = pd.read_excel("datasets/raw_DVLA/veh1153.ods",sheet_name="VEH1153a_RoadUsing",header=4)
     return (df_1153,)
-
-
-@app.cell
-def _(df_1153):
-    df_1153.info()
-    return
 
 
 @app.cell
@@ -631,6 +1003,7 @@ def _(df_elec_fossil, ratio_1103, ratio_1153):
         df_elec_fossil,
         on="quarter_date_dt",
         how="left",
+        copy=True
     )
 
     df_ratios.rename(columns={"Plug-in/Fossil":"New Plug-in/Fossil"},inplace=True)
@@ -639,9 +1012,12 @@ def _(df_elec_fossil, ratio_1103, ratio_1153):
         ratio_1103,
         on="quarter_date_dt",
         how="left",
+        copy=True
     )
 
     df_all_ratios.rename(columns={"Plug-in/Fossil":"All Plug-in/Fossil"},inplace=True)
+
+    df_all_ratios
     return (df_all_ratios,)
 
 
@@ -651,10 +1027,7 @@ def _(df_all_ratios, px):
         df_all_ratios[df_all_ratios["quarter_date"]>="2020-Q3"],
         x="quarter_date",
         y=["fossil_electricity_ratio_pct_change","All Plug-in/Fossil","New Plug-in/Fossil"],
-        labels={"value":"% change"}
     )
-
-    fig_all_ratios.data[0].name = 'Fossil/Electricty Price'
 
     fig_all_ratios.show()
     return
