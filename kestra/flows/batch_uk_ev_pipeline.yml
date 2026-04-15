@@ -1,0 +1,47 @@
+id: batch_uk_ev_pipeline
+namespace: uk_ev_takeup
+
+description: |
+  #### === BATCH UK EV PIPELINE === ####
+  Run the full source-by-source pipeline in sequence:
+  1. FX
+  2. electricity
+  3. petroleum
+  4. DVLA VEH1103
+  5. DVLA VEH1153
+
+tasks:
+  - id: ingest_bank_of_england_eur_gbp_fx
+    type: io.kestra.plugin.core.flow.Subflow
+    namespace: uk_ev_takeup
+    flowId: ingest_bank_of_england_eur_gbp_fx
+    wait: true
+    transmitFailed: true
+
+  - id: ingest_european_wholesale_electricity_prices
+    type: io.kestra.plugin.core.flow.Subflow
+    namespace: uk_ev_takeup
+    flowId: ingest_european_wholesale_electricity_prices
+    wait: true
+    transmitFailed: true
+
+  - id: ingest_desnz_petroleum_products_prices
+    type: io.kestra.plugin.core.flow.Subflow
+    namespace: uk_ev_takeup
+    flowId: ingest_desnz_petroleum_products_prices
+    wait: true
+    transmitFailed: true
+
+  - id: ingest_dvla_veh1103
+    type: io.kestra.plugin.core.flow.Subflow
+    namespace: uk_ev_takeup
+    flowId: ingest_dvla_veh1103
+    wait: true
+    transmitFailed: true
+
+  - id: ingest_dvla_veh1153
+    type: io.kestra.plugin.core.flow.Subflow
+    namespace: uk_ev_takeup
+    flowId: ingest_dvla_veh1153
+    wait: true
+    transmitFailed: true

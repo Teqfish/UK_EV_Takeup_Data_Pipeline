@@ -24,6 +24,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: /root/.config/gcloud/application_default_credentials.json
       UV_LINK_MODE: copy
       UV_CACHE_DIR: /app/storage/uv-cache
+      UV_PROJECT_ENVIRONMENT: /app/storage/venvs/uk_ev_takeup
       KESTRA_CONFIGURATION: |
         datasources:
           postgres:
