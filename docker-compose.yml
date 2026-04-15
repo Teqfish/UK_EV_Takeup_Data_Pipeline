@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: kestra_postgres
+    environment:
+      POSTGRES_DB: kestra
+      POSTGRES_USER: kestra
+      POSTGRES_PASSWORD: kestra
+    ports:
+      - "5433:5432"
+    volumes:
+      - kestra_postgres_data:/var/lib/postgresql/data
+
+  kestra:
+    build:
+      context: .
+      dockerfile: docker/kestra/Dockerfile
+    container_name: kestra
+    command: server standalone
+    user: "root"
+    ports:
+      - "8080:8080"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /root/.config/gcloud/application_default_credentials.json
+      UV_LINK_MODE: copy
+      UV_CACHE_DIR: /app/storage/uv-cache
+      KESTRA_CONFIGURATION: |
+        datasources:
+          postgres:
+            url: jdbc:postgresql://postgres:5432/kestra
+            driverClassName: org.postgresql.Driver
+            username: kestra
+            password: kestra
+
+        kestra:
+          server:
+            basic-auth:
+              enabled: true
+              username: kestra@kestra.com
+              password: Kestra1234
+          repository:
+            type: postgres
+          storage:
+            type: local
+            local:
+              basePath: /app/storage
+          queue:
+            type: postgres
+          tasks:
+            tmpDir:
+              path: /tmp/kestra-wd/tmp
+          taskRunner:
+            type: io.kestra.plugin.core.runner.Process
+
+    volumes:
+      - ./:/app/UK_EV_Takeup_Data_Pipeline
+      - ./kestra/flows:/app/flows
+      - ~/.config/gcloud/application_default_credentials.json:/root/.config/gcloud/application_default_credentials.json:ro
+      - ~/.dbt:/root/.dbt:ro
+      - kestra_storage:/app/storage
+
+    depends_on:
+      - postgres
+
+volumes:
+  kestra_postgres_data:
+  kestra_storage:

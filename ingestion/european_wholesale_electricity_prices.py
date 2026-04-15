@@ -27,9 +27,14 @@ def download_file(url: str, destination_path: Path) -> None:
     print(f"Downloaded file locally: {destination_path}")
 
 
-def upload_file_to_gcs(bucket_name: str, source_file_path: Path, destination_blob_name: str) -> None:
+def upload_file_to_gcs(
+    project_id: str,
+    bucket_name: str,
+    source_file_path: Path,
+    destination_blob_name: str,
+) -> None:
     """Upload a local file to a GCS blob path."""
-    storage_client = storage.Client()
+    storage_client = storage.Client(project=project_id)
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_filename(str(source_file_path))
@@ -53,6 +58,7 @@ def main() -> None:
 
     # Read config from environment
     source_url = os.environ["EUROPEAN_WHOLESALE_ELECTRICITY_PRICES_URL"]
+    project_id = os.environ["GCP_PROJECT_ID"]
     bucket_name = os.environ["GCS_BUCKET"]
     local_raw_dir = Path(os.environ["LOCAL_RAW_DIR"])
     local_prepared_dir = Path(os.environ["LOCAL_PREPARED_DIR"])
@@ -81,6 +87,7 @@ def main() -> None:
 
     # Upload raw CSV to raw/ zone in GCS
     upload_file_to_gcs(
+        project_id=project_id,
         bucket_name=bucket_name,
         source_file_path=raw_local_path,
         destination_blob_name=f"raw/european_wholesale_electricity_prices/{raw_filename}",
@@ -125,6 +132,7 @@ def main() -> None:
 
     # Upload prepared parquet to prepared/ zone in GCS
     upload_file_to_gcs(
+        project_id=project_id,
         bucket_name=bucket_name,
         source_file_path=prepared_local_path,
         destination_blob_name=f"prepared/european_wholesale_electricity_prices/{prepared_filename}",

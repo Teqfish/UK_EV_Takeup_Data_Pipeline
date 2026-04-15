@@ -1,0 +1,47 @@
+id: ingest_dvla_veh1153
+namespace: uk_ev_takeup
+
+description: |
+  #### === INGEST DVLA VEH1153 === ####
+  Run the VEH1153 slice:
+  1. ingest the source file
+  2. load the raw BigQuery table
+  3. run the related dbt models
+
+variables:
+  repo_dir: /app/UK_EV_Takeup_Data_Pipeline
+
+tasks:
+  - id: run_dvla_veh1153_ingestion
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === RUN INGESTION SCRIPT === ####
+      Download the DVLA VEH1153 source, upload raw/prepared files to GCS,
+      and clean up local temp files.
+    commands:
+      - cd {{ vars.repo_dir }}
+      - uv run python ingestion/dvla_veh1153.py
+
+  - id: load_dvla_veh1153_raw_bq
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === LOAD RAW BIGQUERY TABLE === ####
+      Load the prepared VEH1153 parquet from GCS into the raw BigQuery table.
+    commands:
+      - cd {{ vars.repo_dir }}
+      - uv run python ingestion/bigquery/load_raw_dvla_veh1153.py
+
+  - id: run_dbt_dvla_veh1153_models
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === RUN RELATED DBT MODELS === ####
+      Build the VEH1153 staging and intermediate models.
+    commands:
+      - cd {{ vars.repo_dir }}/dbt/uk_ev_takeup
+      - uv run dbt run --select stg_dvla_veh1153 int_vehicle_registrations_new_quarterly int_vehicle_ratios_new_quarterly

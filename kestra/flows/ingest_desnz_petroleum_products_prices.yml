@@ -1,0 +1,47 @@
+id: ingest_desnz_petroleum_products_prices
+namespace: uk_ev_takeup
+
+description: |
+  #### === INGEST DESNZ PETROLEUM PRODUCTS PRICES === ####
+  Run the petroleum price slice:
+  1. ingest the source file
+  2. load the raw BigQuery table
+  3. run the related dbt models
+
+variables:
+  repo_dir: /app/UK_EV_Takeup_Data_Pipeline
+
+tasks:
+  - id: run_petroleum_ingestion
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === RUN INGESTION SCRIPT === ####
+      Download the petroleum source, upload raw/prepared files to GCS,
+      and clean up local temp files.
+    commands:
+      - cd {{ vars.repo_dir }}
+      - uv run python ingestion/desnz_petroleum_products_prices.py
+
+  - id: load_petroleum_raw_bq
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === LOAD RAW BIGQUERY TABLE === ####
+      Load the prepared petroleum parquet from GCS into the raw BigQuery table.
+    commands:
+      - cd {{ vars.repo_dir }}
+      - uv run python ingestion/bigquery/load_raw_desnz_petroleum_products_prices.py
+
+  - id: run_dbt_petroleum_models
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === RUN RELATED DBT MODELS === ####
+      Build the petroleum staging and intermediate models.
+    commands:
+      - cd {{ vars.repo_dir }}/dbt/uk_ev_takeup
+      - uv run dbt run --select stg_desnz_petroleum_products_prices int_petroleum_prices_quarterly
