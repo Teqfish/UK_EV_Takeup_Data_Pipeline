@@ -1,1 +1,86 @@
+version: 2
 
+models:
+  - name: stg_bank_of_england_eur_gbp_fx
+    description: "Staged daily EUR/GBP FX rates from Bank of England."
+    columns:
+      - name: date
+        tests:
+          - not_null
+          - unique
+      - name: gbp_eur_rate
+        tests:
+          - not_null
+
+  - name: stg_european_wholesale_electricity_prices
+    description: "Staged European wholesale electricity prices."
+    columns:
+      - name: country
+        tests:
+          - not_null
+      - name: iso3_code
+        tests:
+          - not_null
+      - name: date
+        tests:
+          - not_null
+
+  - name: stg_desnz_petroleum_products_prices
+    description: "Staged DESNZ quarterly petroleum price series."
+    columns:
+      - name: year
+        tests:
+          - not_null
+      - name: quarter
+        tests:
+          - not_null
+      - name: premium_unleaded
+        tests:
+          - not_null
+      - name: diesel
+        tests:
+          - not_null
+
+  - name: stg_dvla_veh1103
+    description: "Staged DVLA VEH1103 vehicle stock table."
+    columns:
+      - name: geography
+        tests:
+          - not_null
+      - name: date_label
+        tests:
+          - not_null
+      - name: body_type
+        tests:
+          - not_null
+      - name: total
+        tests:
+          - not_null
+      - name: plugin
+        tests:
+          - not_null
+
+  - name: stg_dvla_veh1153
+    description: "Staged DVLA VEH1153 new registration table."
+    columns:
+      - name: geography
+        tests:
+          - not_null
+      - name: date_interval
+        tests:
+          - not_null
+      - name: date_label
+        tests:
+          - not_null
+      - name: body_type
+        tests:
+          - not_null
+      - name: keepership
+        tests:
+          - not_null
+      - name: total
+        tests:
+          - not_null
+      - name: plugin
+        tests:
+          - not_null
