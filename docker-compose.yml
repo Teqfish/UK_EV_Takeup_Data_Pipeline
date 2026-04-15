@@ -63,6 +63,29 @@ services:
     depends_on:
       - postgres
 
+  streamlit:
+    image: python:3.13-slim
+    container_name: streamlit
+    working_dir: /app/UK_EV_Takeup_Data_Pipeline
+    ports:
+      - "8501:8501"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /root/.config/gcloud/application_default_credentials.json
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID}
+      UV_LINK_MODE: copy
+      UV_CACHE_DIR: /tmp/uv-cache
+      UV_PROJECT_ENVIRONMENT: /tmp/venvs/uk_ev_takeup_streamlit
+    volumes:
+      - ./:/app/UK_EV_Takeup_Data_Pipeline
+      - ~/.config/gcloud/application_default_credentials.json:/root/.config/gcloud/application_default_credentials.json:ro
+    command: >
+      sh -c "
+      pip install uv &&
+      uv run streamlit run streamlit/app.py
+      --server.address 0.0.0.0
+      --server.port 8501
+      "
+      
 volumes:
   kestra_postgres_data:
   kestra_storage:
