@@ -209,10 +209,10 @@ __marimo__/
 .bruin.yml
 
 # Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-terraform.tfvars
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
 crash.log
 override.tf
 override.tf.json
