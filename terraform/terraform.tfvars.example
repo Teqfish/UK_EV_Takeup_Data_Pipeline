@@ -1,0 +1,7 @@
+project_id           = "your-gcp-project-id"
+region               = "europe-west2"
+bucket_name          = "your-unique-gcs-bucket-name"
+raw_dataset_id       = "uk_ev_raw"
+analytics_dataset_id = "uk_ev_analytics"
+bucket_location      = "EU"
+bigquery_location    = "EU"

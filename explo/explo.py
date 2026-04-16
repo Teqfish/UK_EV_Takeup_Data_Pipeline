@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.22.0"
+__generated_with = "0.23.1"
 app = marimo.App()
 
 
@@ -1399,7 +1399,6 @@ def _(df_411, pd):
     for col in price_cols_411:
         df_411[col] = pd.to_numeric(df_411[col], errors="coerce")
         df_411[col] = df_411[col].interpolate(method="linear")
-
     return
 
 

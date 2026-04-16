@@ -9,6 +9,8 @@ description: |
   3. petroleum
   4. DVLA VEH1103
   5. DVLA VEH1153
+  6. rebuild final marts
+  7. test final marts
 
 tasks:
   - id: ingest_bank_of_england_eur_gbp_fx
@@ -45,3 +47,25 @@ tasks:
     flowId: ingest_dvla_veh1153
     wait: true
     transmitFailed: true
+
+  - id: build_final_marts
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === BUILD FINAL MARTS === ####
+      Rebuild dashboard-facing marts after all source subflows complete.
+    commands:
+      - cd /app/UK_EV_Takeup_Data_Pipeline/dbt/uk_ev_takeup
+      - uv run dbt run --select mart_energy_prices_quarterly mart_vehicle_registrations_new_by_fuel_group mart_vehicle_registrations_all_by_fuel_group mart_transition_ratios_quarterly mart_transition_scorecards
+
+  - id: test_final_marts
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === TEST FINAL MARTS === ####
+      Run dbt tests on the marts after the warehouse build completes.
+    commands:
+      - cd /app/UK_EV_Takeup_Data_Pipeline/dbt/uk_ev_takeup
+      - uv run dbt test --select marts
