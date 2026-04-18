@@ -9,3 +9,15 @@ resource "google_project_service" "storage" {
   service            = "storage.googleapis.com"
   disable_on_destroy = false
 }
+
+resource "google_project_service" "compute" {
+  project            = var.project_id
+  service            = "compute.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "iam" {
+  project            = var.project_id
+  service            = "iam.googleapis.com"
+  disable_on_destroy = false
+}
