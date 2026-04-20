@@ -385,19 +385,22 @@ which:
 
 ### Dashboard
 
-![Dashboard screenshot](docs/images/dashboard_overview.png)
+![Dashboard screenshot](media/page1.png)
+![Dashboard screenshot](media/page2.png)
+![Dashboard screenshot](media/page3.png)
+
 
 ### Kestra batch flow
 
-![Kestra batch flow](docs/images/kestra_batch_flow.png)
+![Kestra batch flow](media/kestra_flow.png)
 
 ### dbt lineage graph
 
-![dbt lineage graph](docs/images/dbt_lineage.png)
+![dbt lineage graph](media/dbt_lineage.png)
 
 ### BigQuery marts
 
-![BigQuery marts screenshot](docs/images/bigquery_marts.png)
+![BigQuery marts screenshot](media/bigquery_marts.png)
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
@@ -434,89 +437,489 @@ In short, **electrical cars are increasing in share while the cost of electricit
 
 ## Reproducibility
 
-### Prerequisites
+This project is designed to be reproducible in two modes:
 
-Before running the project, the assessor should have:
+- **Local mode**: Terraform provisions the shared GCP resources, while Docker runs Kestra, Postgres, and Streamlit on the assessor’s own machine.
+- **Cloud mode**: Terraform provisions the shared GCP resources and a Compute Engine VM, and the application stack runs on that VM.
 
-- Docker and Docker Compose
-- Python / `uv`
-- Terraform
-- Google Cloud SDK (`gcloud`)
-- a GCP project
-- Application Default Credentials configured via:
-
-```bash
-gcloud auth application-default login
-```
-
-The assessor must also prepare:
-
-- `.env`
-- `terraform/terraform.tfvars`
-
-from the provided example files.
+At the time of writing, the most reliable path is **local mode**. Cloud mode is included as an intended deployment path, but the assessor should treat **local mode as the primary assessed workflow** unless otherwise stated.
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
 ---
 
-### Quickstart
+### Prerequisites
 
-There are two intended operating modes:
+Before attempting either mode, the assessor should have the following installed locally:
 
-- **Local mode**: implemented now
-- **Cloud mode**: planned next phase, where Terraform provisions a VM and the same stack runs remotely
+- **Git**
+- **VS Code** or another code editor
+- **Python 3.13**
+- **uv**
+- **Docker Desktop** or Docker Engine with Docker Compose support
+- **Terraform**
+- **Google Cloud SDK (`gcloud`)**
+- a **Google Cloud Platform account** with permission to create a project and link billing
 
-### Local mode: one-command run
+#### Required local software
 
-After the assessor has:
-
-1. created their GCP project
-2. authenticated with `gcloud auth application-default login`
-3. copied `.env.example` to `.env`
-4. copied `terraform/terraform.tfvars.example` to `terraform/terraform.tfvars`
-5. filled both files with their values
-
-they can run the full local workflow with:
+Recommended install checks:
 
 ``` bash
-make run-local
+git --version
+python3 --version
+uv --version
+docker --version
+docker compose version
+terraform version
+gcloud version
 ```
 
-This command:
+#### Clone the repository
 
-- applies Terraform
-- starts Kestra, Postgres, and Streamlit
-- waits for Kestra to become reachable
-- triggers the full `batch_uk_ev_pipeline` flow
+Clone the repository locally and enter the project folder:
 
-Then:
+``` bash
+git clone https://github.com/Teqfish/UK_EV_Takeup_Data_Pipeline.git
+cd UK_EV_Takeup_Data_Pipeline
+```
 
-- monitor Kestra at `http://localhost:8080`
-- view the dashboard at `http://localhost:8501`
+---
 
-### Local mode: step-by-step run
+### GCP setup required before running the project
 
-If preferred, the assessor can run the pipeline in stages:
+Both **local mode** and **cloud mode** rely on GCP resources. The assessor must therefore create and configure a GCP project first.
+
+#### 1. Create a GCP project
+
+In the Google Cloud Console:
+
+1. Open the **Google Cloud Console**
+2. Click the **project selector** at the top
+3. Click **New Project**
+4. Enter a project name
+5. Create the project
+6. Switch into the newly created project
+
+#### 2. Link a billing account
+
+A billing account must be linked, otherwise Terraform will fail when trying to provision resources.
+
+In the Google Cloud Console:
+
+1. Open **Billing**
+2. Select or create a billing account
+3. Link the new project to that billing account
+
+#### 3. IAM permissions for the assessor’s user
+
+The assessor’s own Google account needs permissions on the project so Terraform can create resources.
+
+For the simplest setup, the assessor should ensure their user has:
+
+- **Owner**
+
+If they created the project themselves, this is usually already true.
+
+To check or grant this in the Google Cloud Console:
+
+1. Open **IAM & Admin**
+2. Open **IAM**
+3. Find the assessor’s Google account
+4. Confirm it has the **Owner** role
+
+This is the minimum practical setup for reproducing the project quickly.
+
+#### 4. Enable required APIs
+
+In the Google Cloud Console, enable these APIs for the project:
+
+- **Compute Engine API**
+- **Cloud Storage API**
+- **BigQuery API**
+- **Identity and Access Management (IAM) API**
+
+In the console:
+
+1. Open **APIs & Services**
+2. Open **Library**
+3. Search each API by name
+4. Click **Enable**
+
+#### 5. Authenticate locally with gcloud and ADC
+
+The assessor must authenticate locally so Terraform, Python, dbt, and the Google client libraries can access the project.
+
+Run:
+
+``` bash
+gcloud auth login
+gcloud auth application-default login
+```
+
+Set the active project:
+
+``` bash
+gcloud config set project YOUR_GCP_PROJECT_ID
+gcloud auth application-default set-quota-project YOUR_GCP_PROJECT_ID
+```
+
+Check that the active project is correct:
+
+``` bash
+gcloud config get-value project
+```
+
+---
+
+### Configuration files required
+
+The assessor must create the runtime config files from the examples provided in the repo.
+
+Copy:
+
+- `.env.example` → `.env`
+- `terraform/terraform.tfvars.example` → `terraform/terraform.tfvars`
+
+Commands:
+
+``` bash
+cp .env.example .env
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+```
+
+#### `.env` values to fill in
+
+At minimum, the assessor must replace the project-specific values:
+
+- `GCP_PROJECT_ID`
+- `GCP_REGION`
+- `GCS_BUCKET`
+
+Other values can normally be left as provided unless the assessor wants to customise them.
+
+#### `terraform/terraform.tfvars` values to fill in
+
+At minimum, the assessor must replace:
+
+- `project_id`
+- `region`
+- `zone`
+- `bucket_name`
+- `bucket_location`
+- `bigquery_location`
+- `cloud_mode_enabled`
+
+They should also confirm:
+
+- `repo_url`
+- `repo_branch`
+
+For normal reproduction, `repo_url` should remain the original project repository URL and `repo_branch` should remain `main`.
+
+---
+
+## Local Quickstart
+
+This is the recommended reproduction path.
+
+### What local mode does
+
+In local mode:
+
+- Terraform provisions the **GCS bucket** and **BigQuery datasets**
+- Docker runs **Kestra**, **Postgres**, and **Streamlit** locally
+- the ingestion scripts and dbt models populate BigQuery
+- Streamlit reads the resulting marts and renders the dashboard
+
+### Local Quickstart: minimum steps
+
+After completing the prerequisite setup above:
+
+1. clone the repo
+2. create and fill in `.env`
+3. create and fill in `terraform/terraform.tfvars`
+4. authenticate with `gcloud`
+5. set `cloud_mode_enabled = false` in `terraform/terraform.tfvars`
+
+Then run:
+
+``` bash
+make terraform-init
+make terraform-apply
+make up
+```
+
+After the stack is up:
+
+- Kestra UI should be available locally
+- Streamlit should be available locally
+
+By default, the main repo uses:
+
+- `http://localhost:8080` for Kestra
+- `http://localhost:8501` for Streamlit
+
+If the assessor changes ports in their local `docker-compose.yml`, they should use those updated ports instead.
+
+### Important note about orchestration
+
+If Kestra flows load successfully in the assessor’s environment, the batch flow can be triggered from the UI or with:
+
+``` bash
+make trigger-batch
+```
+
+If Kestra flow loading fails in the assessor’s environment, the project can still be reproduced manually using the ingestion scripts and dbt commands described below.
+
+---
+
+## Cloud Quickstart
+
+Cloud mode follows the same general logic, but additionally provisions a VM and runs the stack remotely.
+
+### What cloud mode does
+
+In cloud mode:
+
+- Terraform provisions the **GCS bucket**
+- Terraform provisions the **BigQuery datasets**
+- Terraform provisions a **Compute Engine VM**
+- Terraform provisions the related **firewall rules**
+- Terraform provisions the VM **service account** and IAM bindings
+- the VM startup script clones the repository and starts the application stack on the VM
+
+### Additional cloud-mode requirements
+
+In addition to all prerequisite steps already listed, cloud mode also requires:
+
+- `cloud_mode_enabled = true` in `terraform/terraform.tfvars`
+- a valid `zone`
+- a valid `machine_type`
+- a linked billing account
+- the assessor’s user must still have permission to create:
+  - service accounts
+  - VM instances
+  - firewall rules
+  - IAM bindings
+  - storage buckets
+  - BigQuery datasets
+
+If the assessor is **Owner** on the project, this is typically sufficient.
+
+### Cloud Quickstart: minimum steps
+
+After prerequisites and config are complete:
+
+``` bash
+make terraform-init
+make terraform-apply
+```
+
+Terraform will print outputs including the cloud URLs.
+
+The assessor can then open:
+
+- the cloud Kestra URL from Terraform output
+- the cloud Streamlit URL from Terraform output
+
+### Cloud-mode caveat
+
+Cloud mode is included as the intended remote deployment path, but **local mode is the primary reproducible path** for assessment. If cloud orchestration does not behave as expected in a given environment, the assessor should validate the project through local mode.
+
+---
+
+## Thorough manual guide: local mode
+
+This section describes the manual, step-by-step path without relying on one-command orchestration.
+
+### 1. Initialise and apply Terraform
+
+Ensure `cloud_mode_enabled = false` in `terraform/terraform.tfvars`, then run:
 
 ``` bash
 make terraform-init
 make terraform-plan
 make terraform-apply
-make up
-make trigger-batch
 ```
 
-Optional utility commands:
+Expected result:
+
+- GCS bucket created
+- BigQuery raw dataset created
+- BigQuery analytics dataset created
+
+### 2. Start the local stack
 
 ``` bash
-make logs
-make dbt-test
-make dbt-docs
+make up
 ```
 
-### Cloud mode
+Useful checks:
 
-Cloud mode is planned but not yet fully implemented. The intended difference is that Terraform will provision a VM and the same pipeline stack will run there instead of on the assessor’s local machine.
+``` bash
+make ps
+make logs
+```
+
+### 3. Run ingestion scripts manually
+
+From the repo root, run the ingestion steps in this order:
+
+``` bash
+uv run python ingestion/bank_of_england_eur_gbp_fx.py
+uv run python ingestion/bigquery/load_raw_bank_of_england_eur_gbp_fx.py
+
+uv run python ingestion/european_wholesale_electricity_prices.py
+uv run python ingestion/bigquery/load_raw_european_wholesale_electricity_prices.py
+
+uv run python ingestion/desnz_petroleum_products_prices.py
+uv run python ingestion/bigquery/load_raw_desnz_petroleum_products_prices.py
+
+uv run python ingestion/dvla_veh1103.py
+uv run python ingestion/bigquery/load_raw_dvla_veh1103.py
+
+uv run python ingestion/dvla_veh1153.py
+uv run python ingestion/bigquery/load_raw_dvla_veh1153.py
+```
+
+These commands:
+
+- download the source data
+- prepare the transformed output files
+- upload raw and/or prepared files to GCS as needed
+- load the raw tables into BigQuery
+
+### 4. Build dbt models manually
+
+After all raw tables exist, run dbt from the dbt project folder:
+
+``` bash
+cd dbt/uk_ev_takeup
+uv run dbt debug
+uv run dbt deps
+uv run dbt run
+uv run dbt test --select marts
+```
+
+Expected result:
+
+- staging models built
+- intermediate models built
+- mart models built
+- marts tested successfully
+
+### 5. Open the dashboard
+
+Once marts exist, open Streamlit in the browser.
+
+Default local URL:
+
+- `http://localhost:8501`
+
+If the assessor changed ports in `docker-compose.yml`, they should use the modified Streamlit port.
+
+### 6. Optional: view dbt lineage docs
+
+From the dbt project directory:
+
+``` bash
+uv run dbt docs generate
+uv run dbt docs serve --port 8085
+```
+
+Then open:
+
+- `http://localhost:8085`
+
+This shows the dbt docs site and lineage graph.
+
+---
+
+## Thorough manual guide: cloud mode
+
+This section describes the cloud workflow in more detail.
+
+### 1. Configure Terraform for cloud mode
+
+Set in `terraform/terraform.tfvars`:
+
+- `cloud_mode_enabled = true`
+
+Also confirm:
+
+- `project_id`
+- `region`
+- `zone`
+- `bucket_name`
+- `bucket_location`
+- `bigquery_location`
+- `repo_url`
+- `repo_branch`
+
+### 2. Apply Terraform
+
+``` bash
+make terraform-init
+make terraform-plan
+make terraform-apply
+```
+
+Expected result:
+
+- GCS bucket created
+- BigQuery datasets created
+- service account created
+- VM created
+- firewall rules created
+- Terraform outputs printed
+
+### 3. Verify VM startup
+
+If the cloud URLs are not immediately reachable, SSH into the VM and inspect startup logs:
+
+``` bash
+gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE
+sudo journalctl -u google-startup-scripts.service --no-pager -n 120
+```
+
+Useful container checks on the VM:
+
+``` bash
+sudo docker compose -f /opt/UK_EV_Takeup_Data_Pipeline/docker-compose.yml ps
+sudo docker logs kestra --tail 200
+```
+
+### 4. Access the cloud services
+
+Use the URLs printed by Terraform output.
+
+### 5. If remote orchestration fails
+
+If the VM boots but the orchestrated pipeline does not complete as expected, the assessor should fall back to the **local mode manual guide**, which remains the primary reproducible path.
+
+---
+
+## Recommended assessment path
+
+For the fastest and most reliable verification, the assessor should:
+
+1. complete the prerequisite setup
+2. run **local mode**
+3. provision the GCS bucket and BigQuery datasets with Terraform
+4. run the ingestion scripts manually
+5. run dbt manually
+6. confirm the Streamlit dashboard renders correctly
+7. optionally inspect dbt docs lineage
+
+This path proves:
+
+- infrastructure provisioning
+- raw ingestion
+- warehouse loading
+- transformation logic
+- dashboard rendering
+
+without depending on remote orchestration behaviour.
 
 [Back to top](#uk-ev-takeup-data-pipeline)
