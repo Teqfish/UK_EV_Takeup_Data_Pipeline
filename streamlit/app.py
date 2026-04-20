@@ -13,6 +13,7 @@ from plotly.subplots import make_subplots
 
 st.set_page_config(
     page_title="UK EV Takeup Dashboard",
+    page_icon="icon_car.svg",
     layout="wide",
 )
 
@@ -582,7 +583,7 @@ if not ratios_filtered.empty:
             "New Electric vs Fossil Car Registrations",
             "All Electric vs Fossil Car Registrations",
         ],
-        color_discrete_sequence=["red", "#599eff", "#0e12ff"],
+        color_discrete_sequence=["red", "#59ffff", "#0e12ff"],
         labels={
             "quarter_date": "Quarter",
             "value": "% change from selected start",
@@ -615,9 +616,10 @@ if not energy_filtered.empty:
     if energy_view_mode == "Aggregated summary":
         energy_plot_df = energy_filtered.rename(
             columns={
-                "premium_unleaded": "Premium unleaded",
-                "diesel": "Diesel",
-                "electricity_price_p_kwh": "Electricity (p/kWh)",
+                # "premium_unleaded": "Premium unleaded",
+                # "diesel": "Diesel",
+                "fossil_avg": "Fossil average",
+                "electricity_price_gbp_mwhe": "Electricity (GBP/MWhe)",
             }
         )
 
@@ -625,10 +627,16 @@ if not energy_filtered.empty:
             energy_plot_df,
             x="quarter_date",
             y=[
-                "Premium unleaded",
-                "Diesel",
-                "Electricity (p/kWh)",
+                # "Premium unleaded",
+                # "Diesel",
+                "Fossil average",
+                "Electricity (GBP/MWhe)",
             ],
+            color_discrete_sequence=[
+                # "#00ff11",
+                "#FF4800",
+                "#326AE5",
+                ],
             labels={
                 "quarter_date": "Quarter",
                 "value": "Price",
@@ -643,7 +651,7 @@ if not energy_filtered.empty:
                 "crude_oil_index": "Crude oil index",
                 "electricity_price_p_kwh": "Electricity (p/kWh)",
                 "electricity_price_gbp_mwhe": "Electricity (GBP/MWhe)",
-                "fossil_avg": "Fossil average",
+                # "fossil_avg": "Fossil average",
             }
         )
 
@@ -656,9 +664,15 @@ if not energy_filtered.empty:
                 "Crude oil index",
                 # "Electricity (p/kWh)",
                 "Electricity (GBP/MWhe)",
-                "Fossil average",
+                # "Fossil average",
             ],
-            color_discrete_sequence=["#ff0000","#FF4800","#814508","#1DA1FE","#A79A12"],
+            color_discrete_sequence=[
+                "#00ff11",
+                "#FF4800",
+                "#EAB300",
+                "#326AE5",
+                "#D010DB"
+                ],
             labels={
                 "quarter_date": "Quarter",
                 "value": "Value",
