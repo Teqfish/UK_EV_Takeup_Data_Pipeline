@@ -14,7 +14,7 @@ vm_name               = "uk-ev-pipeline-vm"
 machine_type          = "e2-standard-2"
 allowed_ingress_cidrs = ["0.0.0.0/0"]
 
-repo_url              = "..."             # e.g. "https://github.com/Teqfish/UK_EV_Takeup_Data_Pipeline.git"
+repo_url              = "https://github.com/Teqfish/UK_EV_Takeup_Data_Pipeline.git"
 repo_branch           = "main"
 
 bank_of_england_eur_gbp_fx_url            = "https://www.bankofengland.co.uk/boeapps/database/fromshowcolumns.asp?Travel=NIxAZxRSxSUx&FromSeries=1&ToSeries=50&DAT=ALL&FNY=&CSVF=TT&html.x=183&html.y=18&C=C8J&Filter=N#"

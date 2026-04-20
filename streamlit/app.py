@@ -27,12 +27,19 @@ def run_query(query: str) -> pd.DataFrame:
     return client.query(query).to_dataframe()
 
 
+def analytics_table(table_name: str) -> str:
+    """Build a fully qualified analytics table reference from environment variables."""
+    project_id = os.environ["GCP_PROJECT_ID"]
+    dataset_id = os.environ.get("BQ_ANALYTICS_DATASET", "uk_ev_analytics")
+    return f"`{project_id}.{dataset_id}.{table_name}`"
+
+
 @st.cache_data
 def load_transition_ratios() -> pd.DataFrame:
     """Load the transition ratios mart."""
-    query = """
+    query = f"""
         select *
-        from `uk-ev-takeup-data-pipeline.uk_ev_analytics.mart_transition_ratios_quarterly`
+        from {analytics_table("mart_transition_ratios_quarterly")}
         order by quarter_date
     """
     return run_query(query)
@@ -41,9 +48,9 @@ def load_transition_ratios() -> pd.DataFrame:
 @st.cache_data
 def load_energy_prices() -> pd.DataFrame:
     """Load the energy prices mart."""
-    query = """
+    query = f"""
         select *
-        from `uk-ev-takeup-data-pipeline.uk_ev_analytics.mart_energy_prices_quarterly`
+        from {analytics_table("mart_energy_prices_quarterly")}
         order by quarter_date
     """
     return run_query(query)
@@ -52,9 +59,9 @@ def load_energy_prices() -> pd.DataFrame:
 @st.cache_data
 def load_new_registrations() -> pd.DataFrame:
     """Load new vehicle registrations by fuel group."""
-    query = """
+    query = f"""
         select *
-        from `uk-ev-takeup-data-pipeline.uk_ev_analytics.mart_vehicle_registrations_new_by_fuel_group`
+        from {analytics_table("mart_vehicle_registrations_new_by_fuel_group")}
         order by quarter_date, fuel_group
     """
     return run_query(query)
@@ -63,9 +70,9 @@ def load_new_registrations() -> pd.DataFrame:
 @st.cache_data
 def load_all_registrations() -> pd.DataFrame:
     """Load all vehicle registrations by fuel group."""
-    query = """
+    query = f"""
         select *
-        from `uk-ev-takeup-data-pipeline.uk_ev_analytics.mart_vehicle_registrations_all_by_fuel_group`
+        from {analytics_table("mart_vehicle_registrations_all_by_fuel_group")}
         order by quarter_date, fuel_group
     """
     return run_query(query)
@@ -74,10 +81,10 @@ def load_all_registrations() -> pd.DataFrame:
 @st.cache_data
 def load_vehicle_new_detailed() -> pd.DataFrame:
     """Load detailed new vehicle fuel types from staging."""
-    query = """
+    query = f"""
         with filtered as (
             select
-                safe_cast(regexp_extract(date_label, r'(\\d{4})') as int64) as year_num,
+                safe_cast(regexp_extract(date_label, r'(\\d{{4}})') as int64) as year_num,
                 concat('Q', regexp_extract(date_label, r'Q([1-4])')) as quarter_label,
                 petrol,
                 diesel,
@@ -90,12 +97,12 @@ def load_vehicle_new_detailed() -> pd.DataFrame:
                 fuel_cell_electric,
                 gas,
                 others
-            from `uk-ev-takeup-data-pipeline.uk_ev_analytics.stg_dvla_veh1153`
+            from {analytics_table("stg_dvla_veh1153")}
             where geography = 'United Kingdom'
               and body_type = 'Total'
               and keepership = 'Total'
               and date_interval = 'Quarterly'
-              and safe_cast(regexp_extract(date_label, r'(\\d{4})') as int64) >= 2015
+              and safe_cast(regexp_extract(date_label, r'(\\d{{4}})') as int64) >= 2015
         )
 
         select
@@ -131,10 +138,10 @@ def load_vehicle_new_detailed() -> pd.DataFrame:
 @st.cache_data
 def load_vehicle_all_detailed() -> pd.DataFrame:
     """Load detailed all-vehicle fuel types from staging."""
-    query = """
+    query = f"""
         with filtered as (
             select
-                safe_cast(regexp_extract(date_label, r'(\\d{4})') as int64) as year_num,
+                safe_cast(regexp_extract(date_label, r'(\\d{{4}})') as int64) as year_num,
                 concat('Q', regexp_extract(date_label, r'Q([1-4])')) as quarter_label,
                 petrol,
                 diesel,
@@ -147,10 +154,10 @@ def load_vehicle_all_detailed() -> pd.DataFrame:
                 fuel_cell_electric,
                 gas,
                 other_fuel_types
-            from `uk-ev-takeup-data-pipeline.uk_ev_analytics.stg_dvla_veh1103`
+            from {analytics_table("stg_dvla_veh1103")}
             where geography = 'United Kingdom'
               and body_type = 'Total'
-              and safe_cast(regexp_extract(date_label, r'(\\d{4})') as int64) >= 2015
+              and safe_cast(regexp_extract(date_label, r'(\\d{{4}})') as int64) >= 2015
         )
 
         select
