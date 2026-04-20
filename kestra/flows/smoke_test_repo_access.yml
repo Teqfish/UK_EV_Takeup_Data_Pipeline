@@ -1,0 +1,26 @@
+id: smoke_test_repo_access
+namespace: uk_ev_takeup
+
+description: |
+  #### === SMOKE TEST: REPO + TOOL ACCESS === ####
+  Confirm that Kestra can see the mounted repo
+  and run uv, Python, and dbt.
+
+variables:
+  repo_dir: /app/UK_EV_Takeup_Data_Pipeline
+
+tasks:
+  - id: check_repo_and_tools
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    commands:
+      - pwd
+      - ls -la {{ vars.repo_dir }}
+      - which uv || true
+      - uv --version || true
+      - python --version || true
+      - cd {{ vars.repo_dir }}
+      - uv run python --version || true
+      - cd {{ vars.repo_dir }}/dbt/uk_ev_takeup
+      - uv run dbt --version || true

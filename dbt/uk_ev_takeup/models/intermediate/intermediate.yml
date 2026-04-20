@@ -1,0 +1,118 @@
+version: 2
+
+models:
+  - name: int_eur_gbp_fx_monthly
+    description: "First observed EUR/GBP FX rate in each month."
+    columns:
+      - name: month_date
+        tests:
+          - not_null
+          - unique
+      - name: gbp_eur_rate
+        tests:
+          - not_null
+
+  - name: int_electricity_prices_gb_quarterly
+    description: "Quarterly average GB electricity prices in EUR/MWhe."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+          - unique
+      - name: electricity_price_eur_mwhe
+        tests:
+          - not_null
+
+  - name: int_petroleum_prices_quarterly
+    description: "Quarterly petroleum price series."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+          - unique
+      - name: premium_unleaded
+        tests:
+          - not_null
+      - name: diesel
+        tests:
+          - not_null
+
+  - name: int_fossil_electricity_ratio_quarterly
+    description: "Quarterly fossil versus electricity price ratio."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+          - unique
+      - name: fossil_electricity_ratio
+        tests:
+          - not_null
+
+  - name: int_vehicle_registrations_all_quarterly
+    description: "Quarterly all-vehicle registrations by fuel group."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+      - name: fuel_group
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['total', 'fossil', 'plugin']
+      - name: registered_licenses
+        tests:
+          - not_null
+
+  - name: int_vehicle_registrations_new_quarterly
+    description: "Quarterly new-vehicle registrations by fuel group."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+      - name: fuel_group
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['total', 'fossil', 'plugin']
+      - name: registered_licenses
+        tests:
+          - not_null
+
+  - name: int_vehicle_ratios_all_quarterly
+    description: "Quarterly all-vehicle plugin to fossil ratio."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+          - unique
+      - name: all_plugin_fossil_ratio
+        tests:
+          - not_null
+
+  - name: int_vehicle_ratios_new_quarterly
+    description: "Quarterly new-vehicle plugin to fossil ratio."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+          - unique
+      - name: new_plugin_fossil_ratio
+        tests:
+          - not_null
+
+  - name: int_transition_ratios_quarterly
+    description: "Quarterly combined transition ratios with percentage change from 2020-Q3."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+          - unique
+      - name: fossil_electricity_ratio_pct_change
+        tests:
+          - not_null
+      - name: all_plugin_fossil_ratio_pct_change
+        tests:
+          - not_null
+      - name: new_plugin_fossil_ratio_pct_change
+        tests:
+          - not_null

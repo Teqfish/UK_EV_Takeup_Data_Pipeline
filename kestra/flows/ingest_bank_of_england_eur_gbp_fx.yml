@@ -1,0 +1,47 @@
+id: ingest_bank_of_england_eur_gbp_fx
+namespace: uk_ev_takeup
+
+description: |
+  #### === INGEST BANK OF ENGLAND EUR/GBP FX === ####
+  Run the full FX slice:
+  1. ingest the source file
+  2. load the raw BigQuery table
+  3. run the related dbt models
+
+variables:
+  repo_dir: /app/UK_EV_Takeup_Data_Pipeline
+
+tasks:
+  - id: run_fx_ingestion
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === RUN INGESTION SCRIPT === ####
+      Download the FX source, upload raw/prepared files to GCS,
+      and clean up local temp files.
+    commands:
+      - cd {{ vars.repo_dir }}
+      - uv run python ingestion/bank_of_england_eur_gbp_fx.py
+
+  - id: load_fx_raw_bq
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === LOAD RAW BIGQUERY TABLE === ####
+      Load the prepared FX parquet from GCS into the raw BigQuery table.
+    commands:
+      - cd {{ vars.repo_dir }}
+      - uv run python ingestion/bigquery/load_raw_bank_of_england_eur_gbp_fx.py
+
+  - id: run_dbt_fx_models
+    type: io.kestra.plugin.scripts.shell.Commands
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    description: |
+      #### === RUN RELATED DBT MODELS === ####
+      Build the FX staging and monthly intermediate models.
+    commands:
+      - cd {{ vars.repo_dir }}/dbt/uk_ev_takeup
+      - uv run dbt run --select stg_bank_of_england_eur_gbp_fx int_eur_gbp_fx_monthly

@@ -1,0 +1,65 @@
+#!/bin/bash
+set -euxo pipefail
+
+REPO_ROOT="/opt/UK_EV_Takeup_Data_Pipeline"
+
+apt-get update
+apt-get install -y \
+  ca-certificates \
+  curl \
+  git \
+  gnupg \
+  lsb-release \
+  make
+
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+chmod a+r /etc/apt/keyrings/docker.gpg
+
+ARCH=$(dpkg --print-architecture)
+CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
+echo "deb [arch=$${ARCH} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $${CODENAME} stable" > /etc/apt/sources.list.d/docker.list
+
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+mkdir -p /root/.config/gcloud
+echo '${service_account_key_b64}' | base64 -d > /root/.config/gcloud/application_default_credentials.json
+chmod 600 /root/.config/gcloud/application_default_credentials.json
+
+if [ ! -d "$${REPO_ROOT}/.git" ]; then
+  git clone --branch ${repo_branch} ${repo_url} "$${REPO_ROOT}"
+else
+  cd "$${REPO_ROOT}"
+  git fetch origin
+  git checkout ${repo_branch}
+  git pull origin ${repo_branch}
+fi
+
+cat > "$${REPO_ROOT}/.env" <<EOF
+GCP_PROJECT_ID=${project_id}
+GCS_BUCKET=${bucket_name}
+LOCAL_RAW_DIR=tmp/raw
+LOCAL_PREPARED_DIR=tmp/prepared
+
+BANK_OF_ENGLAND_EUR_GBP_FX_URL=${bank_of_england_eur_gbp_fx_url}
+EUROPEAN_WHOLESALE_ELECTRICITY_PRICES_URL=${european_wholesale_electricity_prices_url}
+DESNZ_PETROLEUM_PRODUCTS_PRICES_URL=${desnz_petroleum_products_prices_url}
+DVLA_VEH1103_URL=${dvla_veh1103_url}
+DVLA_VEH1153_URL=${dvla_veh1153_url}
+
+KESTRA_ADMIN_EMAIL=${kestra_admin_email}
+KESTRA_ADMIN_PASSWORD=${kestra_admin_password}
+KESTRA_ADMIN_NAME=${kestra_admin_name}
+EOF
+
+cd "$${REPO_ROOT}"
+docker compose up -d --build
+
+until curl -fsS -u "${kestra_admin_email}:${kestra_admin_password}" http://localhost:8080 >/dev/null 2>&1; do
+  sleep 5
+done
+
+curl -fsS -X POST \
+  -u "${kestra_admin_email}:${kestra_admin_password}" \
+  http://localhost:8080/api/v1/executions/uk_ev_takeup/batch_uk_ev_pipeline >/dev/null || true

@@ -1,0 +1,12 @@
+Dataset key
+
+.veh0105 - ods - Licensed vehicles at the end of the quarter by body type, fuel type, keepership (private and company) and upper and lower tier local authority
+.veh0171 - ods - Ultra low emission vehicles (ULEVs) registered for the first time by body type and fuel type, including breakdown of generic models
+.veh0181 - ods - Plug-in vehicles (PiVs) registered for the first time by body type and fuel type, including breakdown of generic models
+.veh1103 - ods - Licensed vehicles at the end of the quarter by body type and fuel type
+.veh1111 - ods - Licensed vehicles at the end of the year by body type, fuel type and year of first use
+.veh1153 - ods - Vehicles registered for the first time by body type, fuel type and keepership (private and company)
+veh9901 - ods - Licensed road using cars and light goods vehicles by local authority, body type, fuel type, CO2 band, keepership, and year of first registration
+veh9902 - ods - Cars and light goods vehicles registered for the first time by body type and fuel type, United Kingdom from January 2020.
+df_VEH0220 - csv -  All licensed vehicles in the United Kingdom; annually from 2014
+df_VEH0270 - csv - Vehicles registered for the first time by body type, make, generic model, model, fuel type and engine size

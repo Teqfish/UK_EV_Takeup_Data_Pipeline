@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: mart_energy_prices_quarterly
+    description: "Quarterly energy price series for the dashboard."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+          - unique
+      - name: fossil_electricity_ratio
+        tests:
+          - not_null
+
+  - name: mart_vehicle_registrations_new_by_fuel_group
+    description: "Quarterly new vehicle registrations by fuel group."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+      - name: fuel_group
+        tests:
+          - not_null
+      - name: registered_licenses
+        tests:
+          - not_null
+
+  - name: mart_vehicle_registrations_all_by_fuel_group
+    description: "Quarterly all vehicle registrations by fuel group."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+      - name: fuel_group
+        tests:
+          - not_null
+      - name: registered_licenses
+        tests:
+          - not_null
+
+  - name: mart_transition_ratios_quarterly
+    description: "Quarterly transition ratios and percentage changes from the 2020-Q3 baseline."
+    columns:
+      - name: quarter_date
+        tests:
+          - not_null
+          - unique
+      - name: fossil_electricity_ratio
+        tests:
+          - not_null
+      - name: new_plugin_fossil_ratio
+        tests:
+          - not_null
+      - name: all_plugin_fossil_ratio
+        tests:
+          - not_null
+
+  - name: mart_transition_scorecards
+    description: "Single-row scorecard summary for the dashboard."
+    columns:
+      - name: as_of_quarter
+        tests:
+          - not_null
+          - unique

@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: uk_ev_raw
+    database: uk-ev-takeup-data-pipeline
+    schema: uk_ev_raw
+    tables:
+      - name: raw_bank_of_england_eur_gbp_fx
+      - name: raw_european_wholesale_electricity_prices
+      - name: raw_desnz_petroleum_products_prices
+      - name: raw_dvla_veh1103
+      - name: raw_dvla_veh1153
