@@ -2,11 +2,11 @@ import os
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 from dotenv import load_dotenv
 from google.cloud import bigquery
 from plotly.subplots import make_subplots
-import plotly.graph_objects as go
 
 
 #### === PAGE CONFIG === ####
@@ -203,6 +203,23 @@ def format_pct_delta(current: float, start: float) -> str:
     return f"{delta:+.1f}% vs start"
 
 
+def render_big_title(text: str) -> None:
+    """Render a large bold external title above a chart/section."""
+    st.markdown(
+        f"""
+        <div style="
+            font-size: 1.45rem;
+            font-weight: 700;
+            line-height: 1.25;
+            margin: 0.2rem 0 0.8rem 0;
+        ">
+            {text}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def build_share_lookup(df: pd.DataFrame) -> pd.DataFrame:
     """Convert long registration data to plugin share by quarter."""
     pivoted = (
@@ -234,7 +251,10 @@ def rebase_series_from_start(df: pd.DataFrame, columns: list[str]) -> pd.DataFra
     return rebased
 
 
-def reshape_vehicle_detailed(df: pd.DataFrame, value_name: str = "registered_licenses") -> pd.DataFrame:
+def reshape_vehicle_detailed(
+    df: pd.DataFrame,
+    value_name: str = "registered_licenses",
+) -> pd.DataFrame:
     """Convert wide detailed vehicle dataframe to long form for plotting."""
     if df.empty:
         return df
@@ -258,6 +278,45 @@ def reshape_vehicle_detailed(df: pd.DataFrame, value_name: str = "registered_lic
     return long_df.sort_values(["quarter_date", "fuel_type"]).reset_index(drop=True)
 
 
+def remove_total_series(df: pd.DataFrame, color_col: str) -> pd.DataFrame:
+    """Remove total traces from stacked area charts."""
+    if df.empty:
+        return df
+
+    excluded = {"total", "Total"}
+    return df[~df[color_col].isin(excluded)].copy()
+
+
+def get_series_order_by_end_share(
+    left_df: pd.DataFrame,
+    right_df: pd.DataFrame,
+    color_col: str,
+    y_col: str,
+) -> list[str]:
+    """Order traces by ascending share at the end of the selected window."""
+    def end_share_map(df: pd.DataFrame) -> pd.Series:
+        if df.empty:
+            return pd.Series(dtype=float)
+
+        latest_date = df["quarter_date"].max()
+        latest_df = df[df["quarter_date"] == latest_date].copy()
+
+        total = latest_df[y_col].sum()
+        if total == 0:
+            return pd.Series(dtype=float)
+
+        shares = latest_df.groupby(color_col)[y_col].sum() / total
+        return shares
+
+    left_shares = end_share_map(left_df)
+    right_shares = end_share_map(right_df)
+
+    combined = pd.concat([left_shares.rename("left"), right_shares.rename("right")], axis=1).fillna(0)
+    combined["avg_share"] = combined.mean(axis=1)
+
+    return combined.sort_values("avg_share", ascending=True).index.tolist()
+
+
 def build_vehicle_subplot(
     left_df: pd.DataFrame,
     right_df: pd.DataFrame,
@@ -268,7 +327,10 @@ def build_vehicle_subplot(
     x_label: str,
     y_label: str,
 ) -> go.Figure:
-    """Build side-by-side vehicle charts with one shared legend."""
+    """Build side-by-side stacked area charts with one shared legend."""
+    left_df = remove_total_series(left_df, color_col)
+    right_df = remove_total_series(right_df, color_col)
+
     fig = make_subplots(
         rows=1,
         cols=2,
@@ -277,7 +339,12 @@ def build_vehicle_subplot(
         horizontal_spacing=0.08,
     )
 
-    categories = sorted(set(left_df[color_col].dropna().unique()).union(set(right_df[color_col].dropna().unique())))
+    categories = get_series_order_by_end_share(
+        left_df=left_df,
+        right_df=right_df,
+        color_col=color_col,
+        y_col=y_col,
+    )
 
     palette = px.colors.qualitative.Plotly
     color_map = {cat: palette[i % len(palette)] for i, cat in enumerate(categories)}
@@ -317,12 +384,15 @@ def build_vehicle_subplot(
         )
 
     fig.update_layout(
-        title="Vehicle registrations over selected period",
         xaxis_title=x_label,
         xaxis2_title=x_label,
         yaxis_title=y_label,
         legend_title_text=color_col.replace("_", " ").title(),
-        margin=dict(t=80),
+        legend=dict(
+            font=dict(size=15),
+            traceorder="normal",
+        ),
+        margin=dict(t=60),
     )
 
     return fig
@@ -332,8 +402,12 @@ def build_vehicle_subplot(
 
 load_dotenv()
 
-st.title("UK EV Takeup Dashboard")
-st.caption("Dashboard prototype reading directly from BigQuery marts and staging views.")
+st.title("UK Electric Vehicle Takeup Dashboard", width="stretch", text_alignment="center")
+st.caption(
+    "A dashboard to compare energy prices with vehicle registrations by fuel type in the UK",
+    width="stretch",
+    text_alignment="center",
+)
 
 
 #### === LOAD DATA === ####
@@ -359,7 +433,7 @@ if available_dates:
     max_date = pd.Timestamp(available_dates[-1])
     default_start = max(min_date, max_date - pd.DateOffset(years=5))
 
-    st.subheader("Date range")
+    render_big_title("Date range")
 
     selected_range = st.slider(
         "Select quarter range",
@@ -416,8 +490,6 @@ end_all_share_row = all_share_df.iloc[-1] if not all_share_df.empty else None
 
 #### === SCORECARDS === ####
 
-st.subheader("Transition Scorecards")
-
 if (
     start_ratio_row is not None
     and end_ratio_row is not None
@@ -431,7 +503,7 @@ if (
     start_label = pd.to_datetime(start_ratio_row["quarter_date"]).strftime("%b %Y")
     end_label = pd.to_datetime(end_ratio_row["quarter_date"]).strftime("%b %Y")
 
-    st.caption(f"From {start_label} to {end_label}")
+    st.write("")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -477,10 +549,12 @@ if (
 else:
     st.warning("Not enough data found to build the scorecards.")
 
+st.divider()
+
 
 #### === TRANSITION RATIOS CHART === ####
 
-st.subheader("Transition Ratios Over Time")
+render_big_title("Relative % change of energy prices and car registrations over time")
 
 if not ratios_filtered.empty:
     ratios_rebased = rebase_series_from_start(
@@ -494,9 +568,9 @@ if not ratios_filtered.empty:
 
     ratios_plot_df = ratios_rebased.rename(
         columns={
-            "fossil_electricity_ratio": "Fossil / Electricity",
-            "new_plugin_fossil_ratio": "New Plugin / Fossil",
-            "all_plugin_fossil_ratio": "All Plugin / Fossil",
+            "fossil_electricity_ratio": "Fossil vs Electricity Prices",
+            "new_plugin_fossil_ratio": "New Electric vs Fossil Car Registrations",
+            "all_plugin_fossil_ratio": "All Electric vs Fossil Car Registrations",
         }
     )
 
@@ -504,16 +578,21 @@ if not ratios_filtered.empty:
         ratios_plot_df,
         x="quarter_date",
         y=[
-            "Fossil / Electricity",
-            "New Plugin / Fossil",
-            "All Plugin / Fossil",
+            "Fossil vs Electricity Prices",
+            "New Electric vs Fossil Car Registrations",
+            "All Electric vs Fossil Car Registrations",
         ],
+        color_discrete_sequence=["red", "#599eff", "#0e12ff"],
         labels={
             "quarter_date": "Quarter",
             "value": "% change from selected start",
             "variable": "Series",
         },
-        title="Percentage change rebased to selected start date",
+    )
+
+    fig_ratios.update_layout(
+        legend=dict(font=dict(size=15)),
+        legend_title=dict(font=dict(size=14)),
     )
 
     st.plotly_chart(fig_ratios, width="stretch")
@@ -523,17 +602,17 @@ else:
 
 #### === ENERGY CONTROLS + CHART === ####
 
-st.subheader("Energy Prices Over Time")
+render_big_title("Energy prices over time")
 
 energy_view_mode = st.radio(
     "Energy price view",
-    options=["Aggregated comparison", "Detailed available series"],
+    options=["Detailed breakdown", "Aggregated summary"],
     horizontal=True,
     key="energy_view_mode",
 )
 
 if not energy_filtered.empty:
-    if energy_view_mode == "Aggregated comparison":
+    if energy_view_mode == "Aggregated summary":
         energy_plot_df = energy_filtered.rename(
             columns={
                 "premium_unleaded": "Premium unleaded",
@@ -555,7 +634,6 @@ if not energy_filtered.empty:
                 "value": "Price",
                 "variable": "Series",
             },
-            title="Energy prices over selected period",
         )
     else:
         energy_plot_df = energy_filtered.rename(
@@ -576,19 +654,26 @@ if not energy_filtered.empty:
                 "Premium unleaded",
                 "Diesel",
                 "Crude oil index",
-                "Electricity (p/kWh)",
+                # "Electricity (p/kWh)",
                 "Electricity (GBP/MWhe)",
                 "Fossil average",
             ],
+            color_discrete_sequence=["#ff0000","#FF4800","#814508","#1DA1FE","#A79A12"],
             labels={
                 "quarter_date": "Quarter",
                 "value": "Value",
                 "variable": "Series",
             },
-            title="Detailed available energy series over selected period",
         )
 
-        st.caption("Detailed fossil sub-series are only partially available in the current marts. This view will be widened upstream later.")
+        st.caption(
+            "Detailed fossil sub-series are only partially available in the current marts. This view will be widened upstream later."
+        )
+
+    fig_energy.update_layout(
+        legend=dict(font=dict(size=15)),
+        legend_title=dict(font=dict(size=14)),
+    )
 
     st.plotly_chart(fig_energy, width="stretch")
 else:
@@ -597,11 +682,11 @@ else:
 
 #### === VEHICLE CONTROLS + CHARTS === ####
 
-st.subheader("Vehicle Registrations")
+render_big_title("Vehicle registrations")
 
 vehicle_view_mode = st.radio(
     "Vehicle registration view",
-    options=["Aggregated fuel groups", "Detailed fuel types"],
+    options=["Detailed fuel types","Aggregated fuel groups"],
     horizontal=True,
     key="vehicle_view_mode",
 )
@@ -618,6 +703,12 @@ if vehicle_view_mode == "Aggregated fuel groups":
             x_label="Quarter",
             y_label="Registered licenses",
         )
+
+        vehicle_fig.update_layout(
+            legend=dict(font=dict(size=15)),
+            legend_title=dict(font=dict(size=14)),
+        )
+
         st.plotly_chart(vehicle_fig, width="stretch")
     else:
         st.warning("Not enough aggregated vehicle registration data found.")
@@ -636,6 +727,12 @@ else:
             x_label="Quarter",
             y_label="Registered licenses",
         )
+
+        vehicle_fig.update_layout(
+        legend=dict(font=dict(size=15)),
+        legend_title=dict(font=dict(size=14)),
+    )
+
         st.plotly_chart(vehicle_fig, width="stretch")
     else:
         st.warning("Not enough detailed vehicle registration data found.")
