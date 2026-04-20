@@ -617,6 +617,25 @@ They should also confirm:
 
 For normal reproduction, `repo_url` should remain the original project repository URL and `repo_branch` should remain `main`.
 
+#### 6. Amend dbt profile.yml
+
+Save this in ~/.dbt/profiles.yml. Replace YOUR_GCP_PROJECT_ID with the same GCP project ID used in .env and terraform/terraform.tfvars.
+
+``` YAML
+uk_ev_takeup:
+  target: local
+  outputs:
+    local:
+      type: bigquery
+      method: oauth
+      project: YOUR_GCP_PROJECT_ID
+      dataset: uk_ev_analytics
+      threads: 4
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      location: EU
+      priority: interactive
+```
 ---
 
 ## Local Quickstart
