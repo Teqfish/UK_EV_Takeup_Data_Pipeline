@@ -1,4 +1,0 @@
-{
-  "python.terminal.useEnvFile": true,
-  "dbt.lineage.defaultExpansion": 2
-}

@@ -218,3 +218,12 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# macOS
+.DS_Store
+
+# Editor settings
+.vscode/
+
+# Local working data
+tmp/

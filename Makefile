@@ -3,11 +3,14 @@ include .env
 export
 endif
 
-.PHONY: help check-env check-terraform-vars terraform-init terraform-plan terraform-apply \
-	up down restart logs ps \
+.PHONY: help \
+	check-env check-terraform-vars \
+	terraform-init terraform-plan terraform-apply terraform-destroy terraform-output \
+	up down restart logs ps clean \
 	kestra-url streamlit-url open \
 	dbt-test batch-instructions \
-	wait-kestra trigger-batch run-local clean
+	wait-kestra trigger-batch \
+	run-local run-cloud destroy-cloud
 
 help:
 	@echo ""
@@ -16,23 +19,32 @@ help:
 	@echo "Available commands:"
 	@echo "  make check-env             Check required .env keys exist"
 	@echo "  make check-terraform-vars  Check terraform/terraform.tfvars exists"
+	@echo ""
 	@echo "  make terraform-init        Initialize Terraform in ./terraform"
-	@echo "  make terraform-plan        Preview local-mode cloud infrastructure changes"
-	@echo "  make terraform-apply       Apply local-mode cloud infrastructure changes"
+	@echo "  make terraform-plan        Preview infrastructure changes"
+	@echo "  make terraform-apply       Apply infrastructure changes"
+	@echo "  make terraform-destroy     Destroy infrastructure defined by Terraform"
+	@echo "  make terraform-output      Show Terraform outputs"
+	@echo ""
 	@echo "  make up                    Start the local stack (Kestra, Postgres, Streamlit)"
 	@echo "  make down                  Stop the local stack"
 	@echo "  make restart               Restart the local stack"
 	@echo "  make logs                  Follow docker compose logs"
 	@echo "  make ps                    Show running services"
-	@echo "  make kestra-url            Print Kestra URL"
-	@echo "  make streamlit-url         Print Streamlit URL"
+	@echo "  make clean                 Stop containers and remove volumes"
+	@echo ""
+	@echo "  make kestra-url            Print local Kestra URL"
+	@echo "  make streamlit-url         Print local Streamlit URL"
 	@echo "  make open                  Print both local app URLs"
+	@echo ""
 	@echo "  make dbt-test              Run dbt tests for marts locally"
 	@echo "  make batch-instructions    Print how to run the batch flow manually"
-	@echo "  make wait-kestra           Wait for Kestra to become reachable"
-	@echo "  make trigger-batch         Trigger batch_uk_ev_pipeline via Kestra API"
-	@echo "  make run-local             Apply Terraform, start stack, wait for Kestra, trigger batch flow"
-	@echo "  make clean                 Stop containers and remove volumes"
+	@echo "  make wait-kestra           Wait for local Kestra to become reachable"
+	@echo "  make trigger-batch         Trigger batch_uk_ev_pipeline on local Kestra"
+	@echo ""
+	@echo "  make run-local             Start local stack, wait for Kestra, trigger batch flow"
+	@echo "  make run-cloud             Apply cloud infrastructure and print cloud URLs"
+	@echo "  make destroy-cloud         Destroy cloud infrastructure"
 	@echo ""
 
 check-env:
@@ -65,6 +77,12 @@ terraform-plan: check-terraform-vars
 terraform-apply: check-terraform-vars
 	terraform -chdir=terraform apply -auto-approve
 
+terraform-destroy: check-terraform-vars
+	terraform -chdir=terraform destroy -auto-approve
+
+terraform-output: check-terraform-vars
+	terraform -chdir=terraform output
+
 up: check-env
 	docker compose up -d --build
 	@echo ""
@@ -85,6 +103,9 @@ logs:
 
 ps:
 	docker compose ps
+
+clean:
+	docker compose down -v
 
 kestra-url:
 	@echo "Kestra UI: http://localhost:8080"
@@ -111,7 +132,7 @@ batch-instructions:
 	@echo ""
 
 wait-kestra:
-	@echo "Waiting for Kestra to become reachable..."
+	@echo "Waiting for local Kestra to become reachable..."
 	@until curl -fsS -u "$(KESTRA_ADMIN_EMAIL):$(KESTRA_ADMIN_PASSWORD)" http://localhost:8080 >/dev/null 2>&1; do \
 		echo "Kestra not ready yet..."; \
 		sleep 5; \
@@ -119,13 +140,13 @@ wait-kestra:
 	@echo "Kestra is up."
 
 trigger-batch:
-	@echo "Triggering Kestra batch flow..."
+	@echo "Triggering Kestra batch flow on local Kestra..."
 	@curl -fsS -X POST \
 		-u "$(KESTRA_ADMIN_EMAIL):$(KESTRA_ADMIN_PASSWORD)" \
 		http://localhost:8080/api/v1/executions/uk_ev_takeup/batch_uk_ev_pipeline >/dev/null
 	@echo "Batch flow triggered: uk_ev_takeup.batch_uk_ev_pipeline"
 
-run-local: check-env check-terraform-vars terraform-apply up wait-kestra trigger-batch
+run-local: check-env up wait-kestra trigger-batch
 	@echo ""
 	@echo "Local pipeline run started."
 	@echo "Kestra UI:     http://localhost:8080"
@@ -137,5 +158,14 @@ run-local: check-env check-terraform-vars terraform-apply up wait-kestra trigger
 	@echo "  3. Open Streamlit"
 	@echo ""
 
-clean:
-	docker compose down -v
+run-cloud: check-terraform-vars terraform-apply
+	@echo ""
+	@echo "Cloud infrastructure applied."
+	@echo "Kestra URL:    $$(terraform -chdir=terraform output -raw cloud_kestra_url 2>/dev/null || true)"
+	@echo "Streamlit URL: $$(terraform -chdir=terraform output -raw cloud_streamlit_url 2>/dev/null || true)"
+	@echo ""
+
+destroy-cloud: check-terraform-vars terraform-destroy
+	@echo ""
+	@echo "Cloud infrastructure destroyed."
+	@echo ""
