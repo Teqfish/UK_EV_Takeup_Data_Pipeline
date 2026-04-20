@@ -136,8 +136,6 @@ Cloud mode is planned as an extension of the same architecture. The only intende
 
 ## Architecture Diagram
 
-> Replace this placeholder with a proper illustrated architecture diagram.
-
 Recommended diagram flow:
 
 **Source websites → Python ingestion scripts → GCS raw/prepared zones → BigQuery raw tables → dbt staging/intermediate/marts → Kestra orchestration → Streamlit dashboard**
