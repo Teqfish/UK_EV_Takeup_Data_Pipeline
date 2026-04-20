@@ -1,7 +1,28 @@
-project_id           = "your-gcp-project-id"
-region               = "europe-west2"
-bucket_name          = "your-unique-gcs-bucket-name"
+project_id           = "..."              # e.g. "your-gcp-project-id"
+region               = "..."              # e.g. "europe-west2"
+zone                 = "..."              # e.g. "europe-west2-a"
+
+bucket_name          = "..."              # e.g. "uk-ev-takeup-data-pipeline-yourname-123"
+bucket_location      = "..."              # e.g. "EUROPE-WEST2"
+bigquery_location    = "..."              # e.g. "EU"
+
+cloud_mode_enabled    = ...               # e.g. true or false
+
 raw_dataset_id       = "uk_ev_raw"
 analytics_dataset_id = "uk_ev_analytics"
-bucket_location      = "EU"
-bigquery_location    = "EU"
+vm_name               = "uk-ev-pipeline-vm"
+machine_type          = "e2-standard-2"
+allowed_ingress_cidrs = ["0.0.0.0/0"]
+
+repo_url              = "..."             # e.g. "https://github.com/Teqfish/UK_EV_Takeup_Data_Pipeline.git"
+repo_branch           = "main"
+
+bank_of_england_eur_gbp_fx_url            = "https://www.bankofengland.co.uk/boeapps/database/fromshowcolumns.asp?Travel=NIxAZxRSxSUx&FromSeries=1&ToSeries=50&DAT=ALL&FNY=&CSVF=TT&html.x=183&html.y=18&C=C8J&Filter=N#"
+european_wholesale_electricity_prices_url = "https://files.ember-energy.org/public-downloads/price/outputs/european_wholesale_electricity_price_data_monthly.csv"
+desnz_petroleum_products_prices_url       = "https://assets.publishing.service.gov.uk/media/699c5d8931713b50fd49c045/table_411_413__6_.xlsx"
+dvla_veh1103_url                          = "https://assets.publishing.service.gov.uk/media/696641a696e60a090ce2000a/veh1103.ods"
+dvla_veh1153_url                          = "https://assets.publishing.service.gov.uk/media/696641a699fbdc498faecd93/veh1153.ods"
+
+kestra_admin_email    = "kestra@kestra.com"
+kestra_admin_password = "Kestra1234"
+kestra_admin_name     = "kestra@kestra.com"
