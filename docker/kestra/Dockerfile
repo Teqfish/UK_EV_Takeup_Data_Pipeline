@@ -1,4 +1,4 @@
-FROM kestra/kestra:latest
+FROM kestra/kestra:v1.3.12
 
 USER root
 

@@ -16,7 +16,7 @@ services:
       context: .
       dockerfile: docker/kestra/Dockerfile
     container_name: kestra
-    command: server standalone --flow-path=/app/flows
+    command: server standalone
     user: "root"
     ports:
       - "8082:8080"
@@ -37,8 +37,8 @@ services:
           server:
             basic-auth:
               enabled: true
-              username: kestra@kestra.com
-              password: Kestra1234
+              username: ${KESTRA_ADMIN_EMAIL}
+              password: ${KESTRA_ADMIN_PASSWORD}
           repository:
             type: postgres
           storage:

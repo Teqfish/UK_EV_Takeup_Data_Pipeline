@@ -11,16 +11,16 @@ variables:
 
 tasks:
   - id: check_repo_and_tools
-    type: io.kestra.plugin.scripts.shell.Commands
+    type: io.kestra.plugin.scripts.shell.Script
     taskRunner:
       type: io.kestra.plugin.core.runner.Process
-    commands:
-      - pwd
-      - ls -la {{ vars.repo_dir }}
-      - which uv || true
-      - uv --version || true
-      - python --version || true
-      - cd {{ vars.repo_dir }}
-      - uv run python --version || true
-      - cd {{ vars.repo_dir }}/dbt/uk_ev_takeup
-      - uv run dbt --version || true
+    script: |
+      pwd
+      ls -la {{ vars.repo_dir }}
+      which uv || true
+      uv --version || true
+      python --version || true
+      cd {{ vars.repo_dir }}
+      uv run python --version || true
+      cd {{ vars.repo_dir }}/dbt/uk_ev_takeup
+      uv run dbt --version || true
