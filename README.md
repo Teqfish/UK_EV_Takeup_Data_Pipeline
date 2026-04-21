@@ -2,7 +2,7 @@
 
 A batch data engineering pipeline and dashboard for analysing the relationship between UK vehicle fuel-type transition and energy price trends. The project ingests public transport and energy datasets, stores raw and prepared data in Google Cloud, transforms it in BigQuery with dbt, orchestrates the full workflow with Kestra, and serves the final analytical views in Streamlit.
 
-![Dashboard screenshot](docs/images/dashboard_overview.png)
+![Dashboard screenshot](media/page1.png)
 
 ---
 
@@ -136,9 +136,7 @@ Cloud mode is planned as an extension of the same architecture. The only intende
 
 ## Architecture Diagram
 
-**Source websites → Python ingestion scripts → GCS raw/prepared zones → BigQuery raw tables → dbt staging/intermediate/marts → Kestra orchestration → Streamlit dashboard**
-
-![Architecture diagram](media/adsf.jpg)
+![Architecture diagram](media/flowchart.jpg)
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
@@ -416,7 +414,7 @@ In short, **electrical cars are increasing in share while the cost of electricit
 
 ## Future Improvements
 
-- complete the **cloud mode** by provisioning a VM and running the full stack remotely
+- **cloud mode** needs a complete overhaul for better reliability
 - redesign the warehouse to support a **monthly** analytical grain rather than quarterly
 - remove hardcoded date bounds from marts to support wider historical windows
 - promote prototype detailed-fuel queries from Streamlit into dbt models
@@ -436,6 +434,8 @@ This project is designed to be reproducible in two modes:
 - **Cloud mode**: Terraform provisions the shared GCP resources and a Compute Engine VM, and the application stack runs on that VM.
 
 At the time of writing, the most reliable path is **local mode**. Cloud mode is included as an intended deployment path, but the assessor should treat **local mode as the primary assessed workflow** unless otherwise stated.
+
+Should orchestration in both modes fail, assessor should run the pipeline manually using the following [instructions](#thorough-manual-guide-local-mode).
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
