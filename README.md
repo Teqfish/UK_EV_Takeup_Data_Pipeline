@@ -136,14 +136,9 @@ Cloud mode is planned as an extension of the same architecture. The only intende
 
 ## Architecture Diagram
 
-Recommended diagram flow:
-
 **Source websites → Python ingestion scripts → GCS raw/prepared zones → BigQuery raw tables → dbt staging/intermediate/marts → Kestra orchestration → Streamlit dashboard**
 
-Suggested image path:
-docs/images/architecture_diagram.png
-
-![Architecture diagram](docs/images/architecture_diagram.png)
+![Architecture diagram](media/adsf.jpg)
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
