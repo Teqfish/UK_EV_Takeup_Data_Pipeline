@@ -433,19 +433,22 @@ This project is designed to be reproducible in two modes:
 - **Local mode**: Terraform provisions the shared GCP resources, while Docker runs Kestra, Postgres, and Streamlit on the assessor’s own machine.
 - **Cloud mode**: Terraform provisions the shared GCP resources and a Compute Engine VM, and the application stack runs on that VM.
 
-At the time of writing, the most reliable and fully tested path is **local mode**. Cloud mode is included as an intended deployment path, but the assessor should treat **local mode as the primary assessed workflow** unless otherwise stated.
+Both modes have now been validated from cold start. For assessment, **local mode remains the recommended primary path** because it is faster to inspect and easier to troubleshoot, while **cloud mode is also fully runnable end to end** and can be used to verify the intended remote deployment path.
 
-The local path has been tested from a true cold start, including:
+The validated cold-start paths include:
 
-- destruction of local containers and Docker volumes
-- destruction of populated GCS and BigQuery resources
-- recreation of infrastructure with Terraform
-- startup of the local application stack
+- destruction of existing infrastructure
+- recreation of Terraform-managed resources
+- startup of the application stack
 - deployment of Kestra flows via API
 - execution of the full Kestra batch pipeline
+- successful dbt model builds and tests
 - successful rendering of the Streamlit dashboard from rebuilt BigQuery marts
 
-Should orchestration in either mode fail, the assessor should run the pipeline manually using the [Thorough manual guide: local mode](#thorough-manual-guide-local-mode).
+If orchestration in either mode fails, the assessor can fall back to the relevant manual path:
+
+- [Thorough manual guide: local mode](#thorough-manual-guide-local-mode)
+- [Thorough manual guide: cloud mode](#thorough-manual-guide-cloud-mode)
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
@@ -468,7 +471,7 @@ Before attempting either mode, the assessor should have the following installed 
 
 Recommended install checks:
 
-```bash
+;;;bash
 git --version
 python3 --version
 uv --version
@@ -476,16 +479,16 @@ docker --version
 docker compose version
 terraform version
 gcloud version
-```
+;;;
 
 #### Clone the repository
 
 Clone the repository locally and enter the project folder:
 
-```bash
+;;;bash
 git clone https://github.com/Teqfish/UK_EV_Takeup_Data_Pipeline.git
 cd UK_EV_Takeup_Data_Pipeline
-```
+;;;
 
 ---
 
@@ -555,23 +558,23 @@ The assessor must authenticate locally so Terraform, Python, dbt, and the Google
 
 Run:
 
-```bash
+;;;bash
 gcloud auth login
 gcloud auth application-default login
-```
+;;;
 
 Set the active project:
 
-```bash
+;;;bash
 gcloud config set project YOUR_GCP_PROJECT_ID
 gcloud auth application-default set-quota-project YOUR_GCP_PROJECT_ID
-```
+;;;
 
 Check that the active project is correct:
 
-```bash
+;;;bash
 gcloud config get-value project
-```
+;;;
 
 ---
 
@@ -586,10 +589,10 @@ Copy:
 
 Commands:
 
-```bash
+;;;bash
 cp .env.example .env
 cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-```
+;;;
 
 #### `.env` values to fill in
 
@@ -599,7 +602,7 @@ At minimum, the assessor must replace the project-specific values:
 - `GCP_REGION`
 - `GCS_BUCKET`
 
-The assessor must also confirm the Kestra credentials used locally:
+The assessor must also confirm the Kestra credentials:
 
 - `KESTRA_ADMIN_EMAIL`
 - `KESTRA_ADMIN_PASSWORD`
@@ -625,11 +628,11 @@ They should also confirm:
 
 For normal reproduction, `repo_url` should remain the original project repository URL and `repo_branch` should remain `main`.
 
-#### 6. Amend dbt profiles.yml
+#### 6. Create dbt `profiles.yml`
 
 Save this in `~/.dbt/profiles.yml`. Replace `YOUR_GCP_PROJECT_ID` with the same GCP project ID used in `.env` and `terraform/terraform.tfvars`.
 
-```yaml
+;;;yaml
 uk_ev_takeup:
   target: local
   outputs:
@@ -643,13 +646,40 @@ uk_ev_takeup:
       job_retries: 1
       location: EU
       priority: interactive
-```
+;;;
+
+---
+
+## Expected cold-start timing
+
+### Local mode
+
+A typical local run consists of:
+
+- Terraform provisioning the GCS bucket and BigQuery datasets
+- local Docker startup
+- Kestra flow deployment
+- full batch execution
+- Streamlit becoming available
+
+Exact timing will vary by machine and network speed.
+
+### Cloud mode
+
+For a full cloud cold start using `make terraform-apply`, the expected timings are approximately:
+
+- **~5 minutes** for Terraform to provision the VM and cloud infrastructure
+- **~6 additional minutes** for the VM startup script to install dependencies, build containers, start services, register flows, run the pipeline, and make the dashboard available
+
+**Total expected time:** about **11 minutes** from running `make terraform-apply` to the dashboard being available.
+
+These timings were observed during a full cold-start test and may vary slightly depending on network speed and image pull/build times.
 
 ---
 
 ## Local Quickstart
 
-This is the recommended reproduction path.
+This is the recommended assessment path.
 
 ### What local mode does
 
@@ -674,15 +704,15 @@ After completing the prerequisite setup above:
 
 Then run:
 
-```bash
+;;;bash
 make terraform-init
 make terraform-apply
 make up
-```
+;;;
 
 This is the intended primary reproduction path.
 
-### What `make up` now does
+### What `make up` does
 
 The `make up` command does more than just start containers. It will:
 
@@ -719,9 +749,9 @@ The Terraform configuration is intentionally set so the assessor can tear down p
 
 This means:
 
-```bash
+;;;bash
 make terraform-destroy
-```
+;;;
 
 will remove the Terraform-managed GCP resources even after the pipeline has already loaded data into them.
 
@@ -731,8 +761,8 @@ The current flow deployment script is designed for clean bootstraps. It behaves 
 
 That means:
 
-- it works perfectly for a fresh assessor run
-- it works perfectly after local Kestra metadata has been wiped
+- it works for a fresh assessor run
+- it works after local Kestra metadata has been wiped
 - but if a developer edits an existing flow and reruns deployment against an already-populated Kestra metadata store, the existing flow will not automatically be overwritten
 
 This is acceptable for assessment because the primary judged path is a clean bootstrap.
@@ -753,6 +783,8 @@ In cloud mode:
 - Terraform provisions the related **firewall rules**
 - Terraform provisions the VM **service account** and IAM bindings
 - the VM startup script clones the repository and starts the application stack on the VM
+- the startup script creates the required dbt profile on the VM
+- the startup script deploys Kestra flows and triggers the batch pipeline automatically
 
 ### Additional cloud-mode requirements
 
@@ -776,10 +808,10 @@ If the assessor is **Owner** on the project, this is typically sufficient.
 
 After prerequisites and config are complete:
 
-```bash
+;;;bash
 make terraform-init
 make terraform-apply
-```
+;;;
 
 Terraform will print outputs including the cloud URLs.
 
@@ -788,9 +820,40 @@ The assessor can then open:
 - the cloud Kestra URL from Terraform output
 - the cloud Streamlit URL from Terraform output
 
-### Cloud-mode caveat
+### Important note about cloud URLs
 
-Cloud mode is included as the intended remote deployment path, but **local mode is the primary reproducible path** for assessment. If cloud orchestration does not behave as expected in a given environment, the assessor should validate the project through local mode.
+After `make terraform-apply`, the assessor should use the URLs printed by Terraform output rather than assuming a previous VM IP is still valid. The external IP can change when the VM is recreated.
+
+To reprint the current URLs:
+
+;;;bash
+terraform -chdir=terraform output
+;;;
+
+### How to watch VM startup and build progress
+
+If the services are not immediately reachable, the assessor can watch the VM startup script in real time:
+
+;;;bash
+gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE --project=YOUR_GCP_PROJECT_ID --command='sudo journalctl -u google-startup-scripts.service -f'
+;;;
+
+Stop following the log with `Ctrl+C`.
+
+Useful container checks on the VM:
+
+;;;bash
+gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE --project=YOUR_GCP_PROJECT_ID --command='sudo docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+;;;
+
+### Expected cloud URLs
+
+By default, cloud mode exposes:
+
+- **Kestra UI** on port `8082`
+- **Streamlit app** on port `8502`
+
+The full URLs are printed by Terraform output and should be used directly.
 
 ---
 
@@ -802,11 +865,11 @@ This section describes the manual, step-by-step path without relying on one-comm
 
 Ensure `cloud_mode_enabled = false` in `terraform/terraform.tfvars`, then run:
 
-```bash
+;;;bash
 make terraform-init
 make terraform-plan
 make terraform-apply
-```
+;;;
 
 Expected result:
 
@@ -816,16 +879,16 @@ Expected result:
 
 ### 2. Start the local stack
 
-```bash
+;;;bash
 make up
-```
+;;;
 
 Useful checks:
 
-```bash
+;;;bash
 make ps
 make logs
-```
+;;;
 
 Note that `make up` will also:
 
@@ -837,7 +900,7 @@ Note that `make up` will also:
 
 If the assessor wants to bypass orchestration and reproduce the data path manually, run the ingestion steps in this order from the repo root:
 
-```bash
+;;;bash
 uv run python ingestion/bank_of_england_eur_gbp_fx.py
 uv run python ingestion/bigquery/load_raw_bank_of_england_eur_gbp_fx.py
 
@@ -852,7 +915,7 @@ uv run python ingestion/bigquery/load_raw_dvla_veh1103.py
 
 uv run python ingestion/dvla_veh1153.py
 uv run python ingestion/bigquery/load_raw_dvla_veh1153.py
-```
+;;;
 
 These commands:
 
@@ -865,13 +928,13 @@ These commands:
 
 After all raw tables exist, run dbt from the dbt project folder:
 
-```bash
+;;;bash
 cd dbt/uk_ev_takeup
 uv run dbt debug
 uv run dbt deps
 uv run dbt run
 uv run dbt test --select marts
-```
+;;;
 
 Expected result:
 
@@ -894,10 +957,10 @@ If the assessor changed ports in `docker-compose.yml`, they should use the modif
 
 From the dbt project directory:
 
-```bash
+;;;bash
 uv run dbt docs generate
 uv run dbt docs serve --port 8085
-```
+;;;
 
 Then open:
 
@@ -930,11 +993,11 @@ Also confirm:
 
 ### 2. Apply Terraform
 
-```bash
+;;;bash
 make terraform-init
 make terraform-plan
 make terraform-apply
-```
+;;;
 
 Expected result:
 
@@ -949,17 +1012,15 @@ Expected result:
 
 If the cloud URLs are not immediately reachable, SSH into the VM and inspect startup logs:
 
-```bash
-gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE
-sudo journalctl -u google-startup-scripts.service --no-pager -n 120
-```
+;;;bash
+gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE --project=YOUR_GCP_PROJECT_ID --command='sudo journalctl -u google-startup-scripts.service --no-pager -n 120'
+;;;
 
 Useful container checks on the VM:
 
-```bash
-sudo docker compose -f /opt/UK_EV_Takeup_Data_Pipeline/docker-compose.yml ps
-sudo docker logs kestra --tail 200
-```
+;;;bash
+gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE --project=YOUR_GCP_PROJECT_ID --command='sudo docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+;;;
 
 ### 4. Access the cloud services
 
@@ -967,7 +1028,12 @@ Use the URLs printed by Terraform output.
 
 ### 5. If remote orchestration fails
 
-If the VM boots but the orchestrated pipeline does not complete as expected, the assessor should fall back to the **local mode manual guide**, which remains the primary reproducible path.
+If the VM boots but the orchestrated pipeline does not complete as expected, the assessor should:
+
+1. inspect the startup-script log
+2. inspect the Kestra UI
+3. inspect container status on the VM
+4. if needed, fall back to the **local mode manual guide**, which remains the simplest assessment path
 
 ---
 
@@ -977,7 +1043,22 @@ If the VM boots but the orchestrated pipeline does not complete as expected, the
 
 During development, a startup timing issue was encountered in the containerized Kestra setup. Custom flows mounted into the container could be discovered too early, before the relevant script plugin types were fully available to the flow loader.
 
-To avoid this, the local workflow now starts Kestra first and then deploys the flow YAML files via the API. This is the intended solution in this project.
+To avoid this, the workflows are deployed after startup via the Kestra API rather than relying on early custom-flow autoloading.
+
+### Cloud dbt profile was not visible inside the Kestra container
+
+During cloud debugging, the VM created `/root/.dbt/profiles.yml` correctly, but Docker Compose initially mounted an empty directory inside the Kestra container. The fix was:
+
+- use `${HOME}` rather than `~` in `docker-compose.yml`
+- set `HOME=/root` in the VM startup script before `docker compose up -d --build`
+
+This allows the VM-created dbt profile to be mounted correctly into the container.
+
+### dbt raw source project must not be hardcoded
+
+During cloud debugging, the dbt source project was originally hardcoded to the development project, which caused cloud runs to query the wrong BigQuery project.
+
+The source definition now uses the active dbt target project instead of a hardcoded project ID, so the same repo works in both local and cloud mode.
 
 ### Batch flow fails at final marts
 
@@ -990,8 +1071,6 @@ The batch flow has been amended so those required intermediates are built before
 
 ### Full destroy fails after data has been loaded
 
-If Terraform is configured with bucket and dataset safe-delete settings, destroy may fail once the pipeline has populated GCS and BigQuery.
-
 This project is intentionally configured to allow full teardown after use:
 
 - bucket `force_destroy = true`
@@ -999,16 +1078,16 @@ This project is intentionally configured to allow full teardown after use:
 
 So the expected destroy path is:
 
-```bash
+;;;bash
 make clean
 make terraform-destroy
-```
+;;;
 
 ---
 
 ## Recommended assessment path
 
-For the fastest and most reliable verification, the assessor should:
+For the fastest and clearest verification, the assessor should:
 
 1. complete the prerequisite setup
 2. run **local mode**
@@ -1016,7 +1095,7 @@ For the fastest and most reliable verification, the assessor should:
 4. let Kestra orchestrate the full batch flow automatically
 5. confirm the Streamlit dashboard renders correctly
 6. optionally inspect dbt docs lineage
-7. optionally run the manual path if they want to verify the pipeline without orchestration
+7. optionally run **cloud mode** to verify the intended remote deployment path
 
 This path proves:
 
