@@ -76,6 +76,7 @@ KESTRA_ADMIN_NAME=${kestra_admin_name}
 EOF
 
 cd "$${REPO_ROOT}"
+export HOME=/root
 docker compose up -d --build
 
 until curl -fsS -u "${kestra_admin_email}:${kestra_admin_password}" http://localhost:8082/ >/dev/null 2>&1; do
