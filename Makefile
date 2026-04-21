@@ -87,8 +87,8 @@ up: check-env
 	docker compose up -d --build
 	@echo ""
 	@echo "Stack started."
-	@echo "Kestra UI:     http://localhost:8080"
-	@echo "Streamlit app: http://localhost:8501"
+	@echo "Kestra UI:     http://localhost:8082"
+	@echo "Streamlit app: http://localhost:8502"
 	@echo ""
 
 down:
@@ -108,14 +108,14 @@ clean:
 	docker compose down -v
 
 kestra-url:
-	@echo "Kestra UI: http://localhost:8080"
+	@echo "Kestra UI: http://localhost:8082"
 
 streamlit-url:
-	@echo "Streamlit app: http://localhost:8501"
+	@echo "Streamlit app: http://localhost:8502"
 
 open:
-	@echo "Kestra UI: http://localhost:8080"
-	@echo "Streamlit app: http://localhost:8501"
+	@echo "Kestra UI: http://localhost:8082"
+	@echo "Streamlit app: http://localhost:8502"
 
 dbt-test:
 	cd dbt/uk_ev_takeup && uv run dbt test --select marts
@@ -123,17 +123,17 @@ dbt-test:
 batch-instructions:
 	@echo ""
 	@echo "Run the full batch pipeline manually:"
-	@echo "  1. Open Kestra: http://localhost:8080"
+	@echo "  1. Open Kestra: http://localhost:8082"
 	@echo "  2. Log in"
 	@echo "  3. Open flow: batch_uk_ev_pipeline"
 	@echo "  4. Click Execute"
 	@echo "  5. Wait for all subflows, mart builds, and tests to pass"
-	@echo "  6. Open Streamlit: http://localhost:8501"
+	@echo "  6. Open Streamlit: http://localhost:8502"
 	@echo ""
 
 wait-kestra:
 	@echo "Waiting for local Kestra to become reachable..."
-	@until curl -fsS -u "$(KESTRA_ADMIN_EMAIL):$(KESTRA_ADMIN_PASSWORD)" http://localhost:8080 >/dev/null 2>&1; do \
+	@until curl -fsS -u "$(KESTRA_ADMIN_EMAIL):$(KESTRA_ADMIN_PASSWORD)" http://localhost:8082 >/dev/null 2>&1; do \
 		echo "Kestra not ready yet..."; \
 		sleep 5; \
 	done
@@ -143,14 +143,14 @@ trigger-batch:
 	@echo "Triggering Kestra batch flow on local Kestra..."
 	@curl -fsS -X POST \
 		-u "$(KESTRA_ADMIN_EMAIL):$(KESTRA_ADMIN_PASSWORD)" \
-		http://localhost:8080/api/v1/executions/uk_ev_takeup/batch_uk_ev_pipeline >/dev/null
+		http://localhost:8082/api/v1/executions/uk_ev_takeup/batch_uk_ev_pipeline >/dev/null
 	@echo "Batch flow triggered: uk_ev_takeup.batch_uk_ev_pipeline"
 
 run-local: check-env up wait-kestra trigger-batch
 	@echo ""
 	@echo "Local pipeline run started."
-	@echo "Kestra UI:     http://localhost:8080"
-	@echo "Streamlit app: http://localhost:8501"
+	@echo "Kestra UI:     http://localhost:8082"
+	@echo "Streamlit app: http://localhost:8502"
 	@echo ""
 	@echo "Next:"
 	@echo "  1. Open Kestra to monitor flow: uk_ev_takeup.batch_uk_ev_pipeline"
