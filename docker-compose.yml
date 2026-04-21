@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: kestra
       POSTGRES_PASSWORD: kestra
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - kestra_postgres_data:/var/lib/postgresql/data
 
@@ -16,10 +16,10 @@ services:
       context: .
       dockerfile: docker/kestra/Dockerfile
     container_name: kestra
-    command: server standalone --flow-path=/app/flows
+    command: server standalone
     user: "root"
     ports:
-      - "8080:8080"
+      - "8082:8080"
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: /root/.config/gcloud/application_default_credentials.json
       UV_LINK_MODE: copy
@@ -37,8 +37,8 @@ services:
           server:
             basic-auth:
               enabled: true
-              username: kestra@kestra.com
-              password: Kestra1234
+              username: ${KESTRA_ADMIN_EMAIL}
+              password: ${KESTRA_ADMIN_PASSWORD}
           repository:
             type: postgres
           storage:
@@ -68,7 +68,7 @@ services:
     container_name: streamlit
     working_dir: /app/UK_EV_Takeup_Data_Pipeline
     ports:
-      - "8501:8501"
+      - "8502:8501"
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: /root/.config/gcloud/application_default_credentials.json
       GCP_PROJECT_ID: ${GCP_PROJECT_ID}
