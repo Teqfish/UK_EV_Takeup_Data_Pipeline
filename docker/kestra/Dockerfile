@@ -2,9 +2,9 @@ FROM kestra/kestra:v1.3.12
 
 USER root
 
-#### === INSTALL PYTHON 3.13 + TOOLS === ####
 RUN apt-get update && apt-get install -y \
     curl \
+    git \
     unzip \
     python3 \
     python3-pip \
@@ -12,7 +12,6 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-#### === INSTALL UV === ####
 RUN pip3 install uv
 
 USER kestra

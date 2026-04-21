@@ -30,10 +30,10 @@ output "cloud_vm_external_ip" {
 
 output "cloud_kestra_url" {
   description = "Kestra URL for cloud mode."
-  value       = var.cloud_mode_enabled ? "http://${google_compute_instance.cloud_vm[0].network_interface[0].access_config[0].nat_ip}:8080" : null
+  value       = var.cloud_mode_enabled ? "http://${google_compute_instance.cloud_vm[0].network_interface[0].access_config[0].nat_ip}:8082" : null
 }
 
 output "cloud_streamlit_url" {
   description = "Streamlit URL for cloud mode."
-  value       = var.cloud_mode_enabled ? "http://${google_compute_instance.cloud_vm[0].network_interface[0].access_config[0].nat_ip}:8501" : null
+  value       = var.cloud_mode_enabled ? "http://${google_compute_instance.cloud_vm[0].network_interface[0].access_config[0].nat_ip}:8502" : null
 }

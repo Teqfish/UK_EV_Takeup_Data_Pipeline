@@ -1,15 +1,15 @@
-project_id           = "..."              # e.g. "your-gcp-project-id"
-region               = "..."              # e.g. "europe-west2"
-zone                 = "..."              # e.g. "europe-west2-a"
+project_id            = "..."              # e.g. "your-gcp-project-id"
+region                = "..."              # e.g. "europe-west2"
+zone                  = "..."              # e.g. "europe-west2-a"
 
-bucket_name          = "..."              # e.g. "uk-ev-takeup-data-pipeline-yourname-123"
-bucket_location      = "..."              # e.g. "EUROPE-WEST2"
-bigquery_location    = "..."              # e.g. "EU"
+bucket_name           = "..."              # e.g. "uk-ev-takeup-data-pipeline-yourname-123"
+bucket_location       = "..."              # e.g. "EUROPE-WEST2"
+bigquery_location     = "..."              # e.g. "EU"
 
 cloud_mode_enabled    = ...               # e.g. true or false
 
-raw_dataset_id       = "uk_ev_raw"
-analytics_dataset_id = "uk_ev_analytics"
+raw_dataset_id        = "uk_ev_raw"
+analytics_dataset_id  = "uk_ev_analytics"
 vm_name               = "uk-ev-pipeline-vm"
 machine_type          = "e2-standard-2"
 allowed_ingress_cidrs = ["0.0.0.0/0"]
