@@ -1,7 +1,7 @@
 name: 'uk_ev_takeup'
 version: '1.0.0'
 config-version: 2
-profile: 'uk_ev_takeup_test'
+profile: 'uk_ev_takeup'
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
