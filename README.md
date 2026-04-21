@@ -435,7 +435,7 @@ This project is designed to be reproducible in two modes:
 
 At the time of writing, the most reliable path is **local mode**. Cloud mode is included as an intended deployment path, but the assessor should treat **local mode as the primary assessed workflow** unless otherwise stated.
 
-Should orchestration in both modes fail, assessor should run the pipeline manually using the following [instructions](#thorough-manual-guide-local-mode).
+Should orchestration in both modes fail, the assessor should run the pipeline manually using the following [instructions](#thorough-manual-guide-local-mode).
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
@@ -458,7 +458,7 @@ Before attempting either mode, the assessor should have the following installed 
 
 Recommended install checks:
 
-``` bash
+```
 git --version
 python3 --version
 uv --version
@@ -472,7 +472,7 @@ gcloud version
 
 Clone the repository locally and enter the project folder:
 
-``` bash
+```
 git clone https://github.com/Teqfish/UK_EV_Takeup_Data_Pipeline.git
 cd UK_EV_Takeup_Data_Pipeline
 ```
@@ -545,21 +545,21 @@ The assessor must authenticate locally so Terraform, Python, dbt, and the Google
 
 Run:
 
-``` bash
+```
 gcloud auth login
 gcloud auth application-default login
 ```
 
 Set the active project:
 
-``` bash
+```
 gcloud config set project YOUR_GCP_PROJECT_ID
 gcloud auth application-default set-quota-project YOUR_GCP_PROJECT_ID
 ```
 
 Check that the active project is correct:
 
-``` bash
+```
 gcloud config get-value project
 ```
 
@@ -576,7 +576,7 @@ Copy:
 
 Commands:
 
-``` bash
+```
 cp .env.example .env
 cp terraform/terraform.tfvars.example terraform/terraform.tfvars
 ```
@@ -588,6 +588,17 @@ At minimum, the assessor must replace the project-specific values:
 - `GCP_PROJECT_ID`
 - `GCP_REGION`
 - `GCS_BUCKET`
+
+The assessor should also confirm the Kestra credentials in `.env`:
+
+- `KESTRA_ADMIN_EMAIL`
+- `KESTRA_ADMIN_PASSWORD`
+
+These credentials are used consistently by:
+
+- the local Kestra container
+- the Make targets
+- the flow deployment bootstrap script
 
 Other values can normally be left as provided unless the assessor wants to customise them.
 
@@ -610,11 +621,11 @@ They should also confirm:
 
 For normal reproduction, `repo_url` should remain the original project repository URL and `repo_branch` should remain `main`.
 
-#### 6. Amend dbt profile.yml
+#### 6. Amend dbt `profiles.yml`
 
-Save this in ~/.dbt/profiles.yml. Replace YOUR_GCP_PROJECT_ID with the same GCP project ID used in .env and terraform/terraform.tfvars.
+Save this in `~/.dbt/profiles.yml`. Replace `YOUR_GCP_PROJECT_ID` with the same GCP project ID used in `.env` and `terraform/terraform.tfvars`.
 
-``` YAML
+```yaml
 uk_ev_takeup:
   target: local
   outputs:
@@ -629,6 +640,7 @@ uk_ev_takeup:
       location: EU
       priority: interactive
 ```
+
 ---
 
 ## Local Quickstart
@@ -641,8 +653,24 @@ In local mode:
 
 - Terraform provisions the **GCS bucket** and **BigQuery datasets**
 - Docker runs **Kestra**, **Postgres**, and **Streamlit** locally
+- a post-start bootstrap step waits for Kestra to become available
+- the local flow YAML files are then deployed into Kestra via the API
+- the main batch flow is triggered automatically
 - the ingestion scripts and dbt models populate BigQuery
 - Streamlit reads the resulting marts and renders the dashboard
+
+### Important note about orchestration
+
+Local orchestration is now bootstrapped in a deterministic order.
+
+Instead of relying on Kestra to autoload local flows during startup, the project now does the following:
+
+1. starts the Kestra container normally
+2. waits for Kestra to become reachable
+3. deploys the flow YAML files into Kestra via the API
+4. triggers the batch orchestration flow automatically
+
+This avoids a startup timing issue observed with local flow autoloading in some environments.
 
 ### Local Quickstart: minimum steps
 
@@ -656,33 +684,57 @@ After completing the prerequisite setup above:
 
 Then run:
 
-``` bash
+```
 make terraform-init
 make terraform-apply
 make up
 ```
 
-After the stack is up:
+### What `make up` now does
 
-- Kestra UI should be available locally
+`make up` now performs the full local bootstrap sequence:
+
+- builds and starts the Docker Compose stack
+- waits for Kestra to become reachable
+- deploys the local flow YAML files into Kestra
+- triggers `uk_ev_takeup.batch_uk_ev_pipeline`
+- leaves Kestra and Streamlit running locally
+
+### Local URLs
+
+By default, the project uses:
+
+- `http://localhost:8082` for Kestra
+- `http://localhost:8502` for Streamlit
+
+If the assessor changes ports in `docker-compose.yml`, they should use those updated ports instead.
+
+### Expected result after `make up`
+
+If the local bootstrap succeeds:
+
+- the Kestra UI should be available locally
+- the project flows should be visible in the `uk_ev_takeup` namespace
+- the batch pipeline should already have been triggered automatically
 - Streamlit should be available locally
+- once the pipeline finishes, the dashboard should render from the populated BigQuery marts
 
-By default, the main repo uses:
+### Helpful local commands
 
-- `http://localhost:8080` for Kestra
-- `http://localhost:8501` for Streamlit
+Useful checks:
 
-If the assessor changes ports in their local `docker-compose.yml`, they should use those updated ports instead.
-
-### Important note about orchestration
-
-If Kestra flows load successfully in the assessor’s environment, the batch flow can be triggered from the UI or with:
-
-``` bash
-make trigger-batch
+```
+make ps
+make logs
+make kestra-url
+make streamlit-url
 ```
 
-If Kestra flow loading fails in the assessor’s environment, the project can still be reproduced manually using the ingestion scripts and dbt commands described below.
+If the assessor wants to trigger the batch flow manually again:
+
+```
+make trigger-batch
+```
 
 ---
 
@@ -723,7 +775,7 @@ If the assessor is **Owner** on the project, this is typically sufficient.
 
 After prerequisites and config are complete:
 
-``` bash
+```
 make terraform-init
 make terraform-apply
 ```
@@ -749,7 +801,7 @@ This section describes the manual, step-by-step path without relying on one-comm
 
 Ensure `cloud_mode_enabled = false` in `terraform/terraform.tfvars`, then run:
 
-``` bash
+```
 make terraform-init
 make terraform-plan
 make terraform-apply
@@ -763,22 +815,38 @@ Expected result:
 
 ### 2. Start the local stack
 
-``` bash
+```
 make up
 ```
 
 Useful checks:
 
-``` bash
+```
 make ps
 make logs
 ```
 
-### 3. Run ingestion scripts manually
+### 3. If required, deploy Kestra flows manually
+
+In a normal local run, `make up` already deploys the flows and triggers the batch flow automatically.
+
+If the assessor needs to repeat only the flow deployment step manually:
+
+```
+make deploy-flows
+```
+
+If the assessor needs to trigger the batch flow manually:
+
+```
+make trigger-batch
+```
+
+### 4. Run ingestion scripts manually
 
 From the repo root, run the ingestion steps in this order:
 
-``` bash
+```
 uv run python ingestion/bank_of_england_eur_gbp_fx.py
 uv run python ingestion/bigquery/load_raw_bank_of_england_eur_gbp_fx.py
 
@@ -802,11 +870,11 @@ These commands:
 - upload raw and/or prepared files to GCS as needed
 - load the raw tables into BigQuery
 
-### 4. Build dbt models manually
+### 5. Build dbt models manually
 
 After all raw tables exist, run dbt from the dbt project folder:
 
-``` bash
+```
 cd dbt/uk_ev_takeup
 uv run dbt debug
 uv run dbt deps
@@ -821,21 +889,21 @@ Expected result:
 - mart models built
 - marts tested successfully
 
-### 5. Open the dashboard
+### 6. Open the dashboard
 
 Once marts exist, open Streamlit in the browser.
 
 Default local URL:
 
-- `http://localhost:8501`
+- `http://localhost:8502`
 
 If the assessor changed ports in `docker-compose.yml`, they should use the modified Streamlit port.
 
-### 6. Optional: view dbt lineage docs
+### 7. Optional: view dbt lineage docs
 
 From the dbt project directory:
 
-``` bash
+```
 uv run dbt docs generate
 uv run dbt docs serve --port 8085
 ```
@@ -871,7 +939,7 @@ Also confirm:
 
 ### 2. Apply Terraform
 
-``` bash
+```
 make terraform-init
 make terraform-plan
 make terraform-apply
@@ -890,14 +958,14 @@ Expected result:
 
 If the cloud URLs are not immediately reachable, SSH into the VM and inspect startup logs:
 
-``` bash
+```
 gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE
 sudo journalctl -u google-startup-scripts.service --no-pager -n 120
 ```
 
 Useful container checks on the VM:
 
-``` bash
+```
 sudo docker compose -f /opt/UK_EV_Takeup_Data_Pipeline/docker-compose.yml ps
 sudo docker logs kestra --tail 200
 ```
@@ -919,19 +987,21 @@ For the fastest and most reliable verification, the assessor should:
 1. complete the prerequisite setup
 2. run **local mode**
 3. provision the GCS bucket and BigQuery datasets with Terraform
-4. run the ingestion scripts manually
-5. run dbt manually
+4. run the full local bootstrap with `make up`
+5. confirm that Kestra loads the flows and triggers the batch execution
 6. confirm the Streamlit dashboard renders correctly
 7. optionally inspect dbt docs lineage
 
 This path proves:
 
 - infrastructure provisioning
+- container startup
+- orchestration bootstrap
 - raw ingestion
 - warehouse loading
 - transformation logic
 - dashboard rendering
 
-without depending on remote orchestration behaviour.
+while keeping the assessor workflow short and repeatable.
 
 [Back to top](#uk-ev-takeup-data-pipeline)
