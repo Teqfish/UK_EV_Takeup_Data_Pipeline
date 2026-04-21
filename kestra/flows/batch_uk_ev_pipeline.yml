@@ -55,9 +55,10 @@ tasks:
     description: |
       #### === BUILD FINAL MARTS === ####
       Rebuild dashboard-facing marts after all source subflows complete.
+      This step also builds the missing intermediate models required by the final marts.
     commands:
       - cd /app/UK_EV_Takeup_Data_Pipeline/dbt/uk_ev_takeup
-      - uv run dbt run --select mart_energy_prices_quarterly mart_vehicle_registrations_new_by_fuel_group mart_vehicle_registrations_all_by_fuel_group mart_transition_ratios_quarterly mart_transition_scorecards
+      - uv run dbt run --select int_fossil_electricity_ratio_quarterly int_transition_ratios_quarterly mart_energy_prices_quarterly mart_vehicle_registrations_new_by_fuel_group mart_vehicle_registrations_all_by_fuel_group mart_transition_ratios_quarterly mart_transition_scorecards
 
   - id: test_final_marts
     type: io.kestra.plugin.scripts.shell.Commands
