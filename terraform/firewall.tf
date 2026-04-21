@@ -19,7 +19,7 @@ resource "google_compute_firewall" "cloud_vm_apps" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8080", "8501", "8089"]
+    ports    = ["8082", "8502"]
   }
 
   source_ranges = var.allowed_ingress_cidrs
