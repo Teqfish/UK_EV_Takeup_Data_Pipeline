@@ -70,7 +70,9 @@ The final dashboard shows:
 
   - [Prerequisites](#prerequisites)
 
-  - [Quickstart](#quickstart)
+  - [Quickstart](#cloud-quickstart)
+
+  - [MakeFile Reference](#makefile-reference)
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
@@ -1107,5 +1109,120 @@ This path proves:
 - dashboard rendering
 
 using the same flow that was validated from a true cold-start rebuild.
+
+[Back to top](#uk-ev-takeup-data-pipeline)
+
+## Makefile reference
+
+The project Makefile provides shortcuts for infrastructure provisioning, local stack orchestration, Kestra flow deployment, and convenience checks.
+
+### Quick usage
+
+Run the available command list:
+
+```bash
+make help
+```
+
+### Command reference
+
+| Command | Description |
+|---|---|
+| `make check-env` | Checks that `.env` exists and that the required keys are present. |
+| `make check-terraform-vars` | Checks that `terraform/terraform.tfvars` exists. |
+| `make terraform-init` | Initializes Terraform in the `terraform` directory. |
+| `make terraform-plan` | Previews infrastructure changes before applying them. |
+| `make terraform-apply` | Applies the Terraform configuration. |
+| `make terraform-destroy` | Destroys the Terraform-managed infrastructure. |
+| `make terraform-output` | Prints Terraform outputs, including cloud URLs when cloud mode is enabled. |
+| `make up` | Builds and starts the local stack, waits for Kestra, deploys flows, and triggers the batch pipeline. |
+| `make down` | Stops the local Docker stack. |
+| `make restart` | Restarts the local stack, waits for Kestra, redeploys flows, and retriggers the batch pipeline. |
+| `make logs` | Follows Docker Compose logs. |
+| `make ps` | Shows the status of local Docker services. |
+| `make clean` | Stops containers and removes Docker volumes. |
+| `make kestra-url` | Prints the local Kestra URL. |
+| `make streamlit-url` | Prints the local Streamlit URL. |
+| `make open` | Prints both local app URLs. |
+| `make wait-kestra` | Waits until the local Kestra API becomes reachable. |
+| `make deploy-flows` | Deploys the flow YAML files to Kestra via API. |
+| `make trigger-batch` | Triggers the `uk_ev_takeup.batch_uk_ev_pipeline` flow on local Kestra. |
+| `make batch-instructions` | Prints a reminder of how the batch flow is triggered and the manual API endpoint. |
+| `make dbt-test` | Runs dbt tests for the marts layer locally. |
+| `make run-local` | Alias for `make up`. |
+| `make run-cloud` | Applies cloud infrastructure and prints the cloud Kestra and Streamlit URLs. |
+| `make destroy-cloud` | Destroys cloud infrastructure. |
+
+### Default local URLs
+
+By default, the local helper commands refer to:
+
+- Kestra UI: `http://localhost:8082`
+- Streamlit app: `http://localhost:8502`
+
+### Recommended command sequences
+
+#### Local mode
+
+A typical local run is:
+
+```bash
+make terraform-init
+make terraform-apply
+make up
+```
+
+This will:
+
+1. provision the shared GCP resources
+2. start the local Docker stack
+3. wait for Kestra
+4. deploy the flows
+5. trigger the full batch pipeline automatically
+
+#### Cloud mode
+
+A typical cloud run is:
+
+```bash
+make terraform-init
+make terraform-apply
+make terraform-output
+```
+
+This will:
+
+1. provision the shared GCP resources
+2. provision the VM and related cloud resources
+3. run the VM startup script, which starts the stack remotely
+4. print the live cloud URLs from Terraform outputs
+
+#### Full teardown
+
+To remove the local Docker stack:
+
+```bash
+make clean
+```
+
+To remove Terraform-managed infrastructure:
+
+```bash
+make terraform-destroy
+```
+
+### Notes
+
+- `make up` is the main local bootstrap command. It does more than start containers: it also waits for Kestra, deploys flows, and triggers the batch pipeline.
+- `make terraform-apply` behaves differently depending on `cloud_mode_enabled` in `terraform/terraform.tfvars`.
+  - `false` provisions shared GCP resources only
+  - `true` also provisions the VM, firewall rules, and cloud service account resources
+- In cloud mode, always use the URLs from:
+
+```bash
+make terraform-output
+```
+
+rather than assuming a previous VM IP is still valid.
 
 [Back to top](#uk-ev-takeup-data-pipeline)
