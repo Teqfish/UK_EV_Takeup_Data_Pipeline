@@ -440,9 +440,9 @@ except Exception as e:
     dashboard_error = e
 
 if not dashboard_ready:
-    st.info(
-        "The dashboard will load once the pipeline completes. Please be patient."
-    )
+    st.markdown("### Dashboard not ready yet")
+    st.write("The dashboard will load once the pipeline completes. Please be patient.")
+    st.caption("If the pipeline is still running, the required warehouse tables may not exist yet.")
     st.stop()
 
 
