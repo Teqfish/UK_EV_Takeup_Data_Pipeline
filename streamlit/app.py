@@ -420,16 +420,30 @@ st.caption(
 
 #### === LOAD DATA === ####
 
-ratios_df = load_transition_ratios()
-energy_df = load_energy_prices()
-new_regs_df = load_new_registrations()
-all_regs_df = load_all_registrations()
-new_detailed_df = load_vehicle_new_detailed()
-all_detailed_df = load_vehicle_all_detailed()
+dashboard_ready = True
+dashboard_error = None
 
-for df in [ratios_df, energy_df, new_regs_df, all_regs_df, new_detailed_df, all_detailed_df]:
-    if not df.empty and "quarter_date" in df.columns:
-        df["quarter_date"] = pd.to_datetime(df["quarter_date"])
+try:
+    ratios_df = load_transition_ratios()
+    energy_df = load_energy_prices()
+    new_regs_df = load_new_registrations()
+    all_regs_df = load_all_registrations()
+    new_detailed_df = load_vehicle_new_detailed()
+    all_detailed_df = load_vehicle_all_detailed()
+
+    for df in [ratios_df, energy_df, new_regs_df, all_regs_df, new_detailed_df, all_detailed_df]:
+        if not df.empty and "quarter_date" in df.columns:
+            df["quarter_date"] = pd.to_datetime(df["quarter_date"])
+
+except Exception as e:
+    dashboard_ready = False
+    dashboard_error = e
+
+if not dashboard_ready:
+    st.info(
+        "The dashboard will load once the pipeline completes. Please be patient."
+    )
+    st.stop()
 
 
 #### === DATE RANGE SELECTION === ####

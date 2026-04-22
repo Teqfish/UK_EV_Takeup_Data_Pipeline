@@ -471,7 +471,7 @@ Before attempting either mode, the assessor should have the following installed 
 
 Recommended install checks:
 
-;;;bash
+```bash
 git --version
 python3 --version
 uv --version
@@ -479,16 +479,16 @@ docker --version
 docker compose version
 terraform version
 gcloud version
-;;;
+```
 
 #### Clone the repository
 
 Clone the repository locally and enter the project folder:
 
-;;;bash
+```bash
 git clone https://github.com/Teqfish/UK_EV_Takeup_Data_Pipeline.git
 cd UK_EV_Takeup_Data_Pipeline
-;;;
+```
 
 ---
 
@@ -558,23 +558,23 @@ The assessor must authenticate locally so Terraform, Python, dbt, and the Google
 
 Run:
 
-;;;bash
+```bash
 gcloud auth login
 gcloud auth application-default login
-;;;
+```
 
 Set the active project:
 
-;;;bash
+```bash
 gcloud config set project YOUR_GCP_PROJECT_ID
 gcloud auth application-default set-quota-project YOUR_GCP_PROJECT_ID
-;;;
+```
 
 Check that the active project is correct:
 
-;;;bash
+```bash
 gcloud config get-value project
-;;;
+```
 
 ---
 
@@ -589,10 +589,10 @@ Copy:
 
 Commands:
 
-;;;bash
+```bash
 cp .env.example .env
 cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-;;;
+```
 
 #### `.env` values to fill in
 
@@ -632,7 +632,7 @@ For normal reproduction, `repo_url` should remain the original project repositor
 
 Save this in `~/.dbt/profiles.yml`. Replace `YOUR_GCP_PROJECT_ID` with the same GCP project ID used in `.env` and `terraform/terraform.tfvars`.
 
-;;;yaml
+```yaml
 uk_ev_takeup:
   target: local
   outputs:
@@ -646,7 +646,7 @@ uk_ev_takeup:
       job_retries: 1
       location: EU
       priority: interactive
-;;;
+```
 
 ---
 
@@ -704,11 +704,11 @@ After completing the prerequisite setup above:
 
 Then run:
 
-;;;bash
+```bash
 make terraform-init
 make terraform-apply
 make up
-;;;
+```
 
 This is the intended primary reproduction path.
 
@@ -749,9 +749,9 @@ The Terraform configuration is intentionally set so the assessor can tear down p
 
 This means:
 
-;;;bash
+```bash
 make terraform-destroy
-;;;
+```
 
 will remove the Terraform-managed GCP resources even after the pipeline has already loaded data into them.
 
@@ -808,10 +808,10 @@ If the assessor is **Owner** on the project, this is typically sufficient.
 
 After prerequisites and config are complete:
 
-;;;bash
+```bash
 make terraform-init
 make terraform-apply
-;;;
+```
 
 Terraform will print outputs including the cloud URLs.
 
@@ -826,25 +826,25 @@ After `make terraform-apply`, the assessor should use the URLs printed by Terraf
 
 To reprint the current URLs:
 
-;;;bash
+```bash
 terraform -chdir=terraform output
-;;;
+```
 
 ### How to watch VM startup and build progress
 
 If the services are not immediately reachable, the assessor can watch the VM startup script in real time:
 
-;;;bash
+```bash
 gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE --project=YOUR_GCP_PROJECT_ID --command='sudo journalctl -u google-startup-scripts.service -f'
-;;;
+```
 
 Stop following the log with `Ctrl+C`.
 
 Useful container checks on the VM:
 
-;;;bash
+```bash
 gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE --project=YOUR_GCP_PROJECT_ID --command='sudo docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
-;;;
+```
 
 ### Expected cloud URLs
 
@@ -865,11 +865,11 @@ This section describes the manual, step-by-step path without relying on one-comm
 
 Ensure `cloud_mode_enabled = false` in `terraform/terraform.tfvars`, then run:
 
-;;;bash
+```bash
 make terraform-init
 make terraform-plan
 make terraform-apply
-;;;
+```
 
 Expected result:
 
@@ -879,16 +879,16 @@ Expected result:
 
 ### 2. Start the local stack
 
-;;;bash
+```bash
 make up
-;;;
+```
 
 Useful checks:
 
-;;;bash
+```bash
 make ps
 make logs
-;;;
+```
 
 Note that `make up` will also:
 
@@ -900,7 +900,7 @@ Note that `make up` will also:
 
 If the assessor wants to bypass orchestration and reproduce the data path manually, run the ingestion steps in this order from the repo root:
 
-;;;bash
+```bash
 uv run python ingestion/bank_of_england_eur_gbp_fx.py
 uv run python ingestion/bigquery/load_raw_bank_of_england_eur_gbp_fx.py
 
@@ -915,7 +915,7 @@ uv run python ingestion/bigquery/load_raw_dvla_veh1103.py
 
 uv run python ingestion/dvla_veh1153.py
 uv run python ingestion/bigquery/load_raw_dvla_veh1153.py
-;;;
+```
 
 These commands:
 
@@ -928,13 +928,13 @@ These commands:
 
 After all raw tables exist, run dbt from the dbt project folder:
 
-;;;bash
+```bash
 cd dbt/uk_ev_takeup
 uv run dbt debug
 uv run dbt deps
 uv run dbt run
 uv run dbt test --select marts
-;;;
+```
 
 Expected result:
 
@@ -957,10 +957,10 @@ If the assessor changed ports in `docker-compose.yml`, they should use the modif
 
 From the dbt project directory:
 
-;;;bash
+```bash
 uv run dbt docs generate
 uv run dbt docs serve --port 8085
-;;;
+```
 
 Then open:
 
@@ -993,11 +993,11 @@ Also confirm:
 
 ### 2. Apply Terraform
 
-;;;bash
+```bash
 make terraform-init
 make terraform-plan
 make terraform-apply
-;;;
+```
 
 Expected result:
 
@@ -1012,15 +1012,15 @@ Expected result:
 
 If the cloud URLs are not immediately reachable, SSH into the VM and inspect startup logs:
 
-;;;bash
+```bash
 gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE --project=YOUR_GCP_PROJECT_ID --command='sudo journalctl -u google-startup-scripts.service --no-pager -n 120'
-;;;
+```
 
 Useful container checks on the VM:
 
-;;;bash
+```bash
 gcloud compute ssh uk-ev-pipeline-vm --zone=YOUR_ZONE --project=YOUR_GCP_PROJECT_ID --command='sudo docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
-;;;
+```
 
 ### 4. Access the cloud services
 
@@ -1078,10 +1078,10 @@ This project is intentionally configured to allow full teardown after use:
 
 So the expected destroy path is:
 
-;;;bash
+```bash
 make clean
 make terraform-destroy
-;;;
+```
 
 ---
 
