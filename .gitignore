@@ -206,6 +206,7 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# Bruin
 .bruin.yml
 
 # Terraform
@@ -229,3 +230,6 @@ override.tf.json
 tmp/
 
 TODO.md
+
+# Assets & Media
+uk_ev_data_flow.svg

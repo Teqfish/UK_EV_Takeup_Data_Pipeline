@@ -138,7 +138,7 @@ Cloud mode is planned as an extension of the same architecture. The only intende
 
 ## Architecture Diagram
 
-![Architecture diagram](media/flow_diagram.svg)
+![Architecture diagram](media/uk_ev_data_flow.png)
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
