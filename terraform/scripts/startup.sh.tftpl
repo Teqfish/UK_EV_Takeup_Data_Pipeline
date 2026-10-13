@@ -2,6 +2,7 @@
 set -euxo pipefail
 
 REPO_ROOT="/opt/UK_EV_Takeup_Data_Pipeline"
+REPO_REF="${repo_branch}"
 
 apt-get update
 apt-get install -y \
@@ -46,13 +47,36 @@ EOF
 chmod 600 /root/.dbt/profiles.yml
 
 if [ ! -d "$${REPO_ROOT}/.git" ]; then
-  git clone --branch ${repo_branch} ${repo_url} "$${REPO_ROOT}"
+  git clone "${repo_url}" "$${REPO_ROOT}"
 else
   cd "$${REPO_ROOT}"
-  git fetch origin
-  git checkout ${repo_branch}
-  git pull origin ${repo_branch}
+  git remote set-url origin "${repo_url}"
+  git fetch --prune origin --tags
 fi
+
+cd "$${REPO_ROOT}"
+if [[ "$${REPO_REF}" =~ ^[[:xdigit:]]{40}$ ]]; then
+  if ! git cat-file -e "$${REPO_REF}^{commit}" 2>/dev/null; then
+    git fetch origin "$${REPO_REF}" || { echo "Git commit not found: $${REPO_REF}" >&2; exit 1; }
+  fi
+  SELECTED_COMMIT=$(git rev-parse --verify "$${REPO_REF}^{commit}")
+else
+  BRANCH_REF="refs/remotes/origin/$${REPO_REF}"
+  TAG_REF="refs/tags/$${REPO_REF}"
+  if git show-ref --verify --quiet "$${BRANCH_REF}" && git show-ref --verify --quiet "$${TAG_REF}"; then
+    echo "Ambiguous Git reference (both branch and tag): $${REPO_REF}" >&2
+    exit 1
+  elif git show-ref --verify --quiet "$${BRANCH_REF}"; then
+    SELECTED_COMMIT=$(git rev-parse --verify "$${BRANCH_REF}^{commit}")
+  elif git show-ref --verify --quiet "$${TAG_REF}"; then
+    SELECTED_COMMIT=$(git rev-parse --verify "$${TAG_REF}^{commit}")
+  else
+    echo "Git branch or tag not found: $${REPO_REF}" >&2
+    exit 1
+  fi
+fi
+git checkout --detach "$${SELECTED_COMMIT}"
+echo "Deployed Git reference $${REPO_REF} at commit $(git rev-parse HEAD)"
 
 cat > "$${REPO_ROOT}/.env" <<EOF
 GCP_PROJECT_ID=${project_id}
