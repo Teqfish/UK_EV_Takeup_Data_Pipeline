@@ -98,7 +98,7 @@ The objective of this project is to build a reproducible batch pipeline that:
 
 - exposes the final outputs through a simple interactive dashboard
 
-- supports both local execution and an eventual cloud VM execution mode
+- supports both local execution and cloud VM execution
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
@@ -110,13 +110,13 @@ This project is designed around a **two-mode architecture**:
 
 - **Local mode**: compute runs on the assessor’s machine via Docker Compose, while cloud storage and warehousing live in GCP
 
-- **Cloud mode**: planned next phase, where Terraform provisions a VM and the full stack runs remotely there
+- **Cloud mode**: Terraform provisions a VM and the full stack runs remotely there
 
 ### Stack summary
 
 | Layer | Tool | Purpose |
 |---|---|---|
-| Infrastructure | Terraform | Provisions local-mode cloud resources in GCP |
+| Infrastructure | Terraform | Provisions shared GCP resources and, in cloud mode, a VM |
 | Storage | Google Cloud Storage | Stores raw and prepared source files |
 | Warehouse | BigQuery | Stores raw tables and analytical models |
 | Transformation | dbt Core | Builds staging, intermediate, and mart models |
@@ -130,7 +130,7 @@ This project is designed around a **two-mode architecture**:
 
 In local mode, Terraform provisions the GCP dependencies and Docker Compose runs the local services. Kestra orchestrates the end-to-end batch flow, dbt builds the warehouse layer in BigQuery, and Streamlit queries the final marts directly.
 
-Cloud mode is planned as an extension of the same architecture. The only intended difference is that Terraform will provision a VM and the same operational stack will run there instead of on the assessor’s local machine.
+In cloud mode, Terraform also provisions a VM. The VM retrieves the selected Git version and runs the operational stack there instead of on the assessor’s local machine.
 
 [Back to top](#uk-ev-takeup-data-pipeline)
 
@@ -628,7 +628,14 @@ They should also confirm:
 - `repo_url`
 - `repo_branch`
 
-For normal reproduction, `repo_url` should remain the original project repository URL and `repo_branch` should remain `main`.
+`repo_branch` accepts a branch name, a Git tag, or a full 40-character commit SHA. It controls which code the **cloud VM** retrieves from `repo_url`; it does not select the code used by local mode. For the latest `main`, leave the default values:
+
+```hcl
+repo_url    = "https://github.com/Teqfish/UK_EV_Takeup_Data_Pipeline.git"
+repo_branch = "main"
+```
+
+To reproduce the historical submission on the VM, set `repo_branch = "de-zoomcamp-2026-submission"`. To pin one exact commit regardless of later branch updates, set `repo_branch` to its full SHA, for example `f1431871d1bff72b5a4eab4e0c95f4e1a1d86b78`. The submission tag currently points to that commit. Branch names follow the latest fetched branch tip; tags and SHAs select the commit they identify. A SHA must remain fetchable from the remote repository.
 
 #### 6. Create dbt `profiles.yml`
 
@@ -688,6 +695,7 @@ This is the recommended assessment path.
 In local mode:
 
 - Terraform provisions the **GCS bucket** and **BigQuery datasets**
+- Docker Compose uses the code currently checked out in the local repository; `repo_branch` does not change it
 - Docker runs **Kestra**, **Postgres**, and **Streamlit** locally
 - Kestra flows are deployed **after startup via the Kestra API**
 - Kestra runs the full batch pipeline automatically
@@ -713,6 +721,8 @@ make up
 ```
 
 This is the intended primary reproduction path.
+
+To run the historical submission locally, check out `de-zoomcamp-2026-submission` in the local clone before running these commands. Git will leave the local clone at a detached HEAD while that tag is checked out.
 
 ### What `make up` does
 
@@ -784,7 +794,7 @@ In cloud mode:
 - Terraform provisions a **Compute Engine VM**
 - Terraform provisions the related **firewall rules**
 - Terraform provisions the VM **service account** and IAM bindings
-- the VM startup script clones the repository and starts the application stack on the VM
+- the VM startup script clones or fetches the repository, checks out the configured `repo_branch` at a specific commit, logs the commit SHA, and starts the application stack on the VM
 - the startup script creates the required dbt profile on the VM
 - the startup script deploys Kestra flows and triggers the batch pipeline automatically
 
@@ -992,6 +1002,8 @@ Also confirm:
 - `bigquery_location`
 - `repo_url`
 - `repo_branch`
+
+Set `repo_branch` to `main` for the latest main branch, `de-zoomcamp-2026-submission` for the historical release, or a full commit SHA for an exact revision. The VM stops before application startup if the selected reference cannot be found. Local mode uses the code checked out in the local clone.
 
 ### 2. Apply Terraform
 

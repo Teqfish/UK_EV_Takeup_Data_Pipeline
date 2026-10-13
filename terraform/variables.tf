@@ -74,7 +74,7 @@ variable "repo_url" {
 }
 
 variable "repo_branch" {
-  description = "Git branch to clone on the cloud VM."
+  description = "Git branch, tag, or full commit SHA to deploy on the cloud VM."
   type        = string
   default     = "main"
 }
